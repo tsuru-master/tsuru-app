@@ -9,7 +9,6 @@
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      /* 背景：鮮やかな水色とピンクのグラデーション */
       background: linear-gradient(135deg, #70d6ff 0%, #ff70a6 100%);
       margin: 0;
       padding: 16px;
@@ -26,16 +25,37 @@
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
       width: 100%;
       max-width: 400px;
-      border: 3px solid #333333; /* 濃いグレーの太枠 */
+      border: 3px solid #333333;
     }
     h1 {
       font-size: 20px;
-      color: #222222; /* くっきり濃いグレー */
+      color: #222222;
       text-align: center;
       margin-top: 0;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       padding-bottom: 10px;
-      border-bottom: 3px solid #ff477e; /* はっきりとしたピンク下線 */
+      border-bottom: 3px solid #ff477e;
+    }
+    /* 所持数表示エリア */
+    .total-card {
+      background: #0284c7;
+      color: #ffffff;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      margin-bottom: 20px;
+      border: 2px solid #333333;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .total-title {
+      font-size: 13px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    .total-count {
+      font-size: 32px;
+      font-weight: bold;
+      margin-top: 4px;
     }
     .form-group {
       margin-bottom: 16px;
@@ -43,14 +63,14 @@
     label {
       display: block;
       font-size: 14px;
-      color: #333333; /* はっきりとした文字色 */
+      color: #333333;
       font-weight: bold;
       margin-bottom: 6px;
     }
     input, select {
       width: 100%;
       padding: 12px;
-      border: 2px solid #555555; /* 濃いグレー枠 */
+      border: 2px solid #555555;
       border-radius: 8px;
       box-sizing: border-box;
       font-size: 15px;
@@ -60,13 +80,13 @@
     }
     input:focus, select:focus {
       outline: none;
-      border-color: #0077b6; /* 濃い水色フォーカス */
+      border-color: #0077b6;
       box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.3);
     }
     .btn-submit {
       width: 100%;
       padding: 14px;
-      background-color: #ff2a70; /* 鮮烈なピンク */
+      background-color: #ff2a70;
       color: #ffffff;
       border: none;
       border-radius: 8px;
@@ -83,7 +103,7 @@
     }
     .history {
       margin-top: 24px;
-      border-top: 3px solid #333333; /* 濃いグレーの仕切り */
+      border-top: 3px solid #333333;
       padding-top: 16px;
     }
     .history h2 {
@@ -97,20 +117,20 @@
       margin: 0;
     }
     li {
-      background: #e0f2fe; /* はっきりわかる薄水色 */
+      background: #e0f2fe;
       padding: 12px;
       border-radius: 8px;
       margin-bottom: 10px;
       font-size: 14px;
       color: #111111;
-      border: 2px solid #0284c7; /* 水色の太めボーダー */
-      border-left: 6px solid #ff2a70; /* 左端に強めのピンク線 */
+      border: 2px solid #0284c7;
+      border-left: 6px solid #ff2a70;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     .delete-btn {
-      background: #4b5563; /* 濃いグレーボタン */
+      background: #4b5563;
       color: #ffffff;
       border: none;
       border-radius: 6px;
@@ -120,7 +140,7 @@
       cursor: pointer;
     }
     .delete-btn:active {
-      background: #dc2626; /* 削除時赤色 */
+      background: #dc2626;
     }
   </style>
 </head>
@@ -129,11 +149,17 @@
   <div class="container">
     <h1>送鶴・受鶴 管理システム</h1>
 
+    <!-- 現在所持している鶴の表示エリア -->
+    <div class="total-card">
+      <div class="total-title">現在持っている鶴</div>
+      <div class="total-count"><span id="totalTsuru">0</span> 羽</div>
+    </div>
+
     <div class="form-group">
       <label>区分</label>
       <select id="type">
-        <option value="送鶴">送鶴</option>
-        <option value="受鶴">受鶴</option>
+        <option value="受鶴">受鶴（増える）</option>
+        <option value="送鶴">送鶴（減る）</option>
       </select>
     </div>
 
@@ -143,8 +169,13 @@
     </div>
 
     <div class="form-group">
-      <label>数量・詳細</label>
-      <input type="text" id="detail" placeholder="例：100羽 / 〇〇件">
+      <label>数量（羽数）</label>
+      <input type="number" id="amount" placeholder="例：10" min="1">
+    </div>
+
+    <div class="form-group">
+      <label>詳細・備考</label>
+      <input type="text" id="detail" placeholder="例：お礼用">
     </div>
 
     <div class="form-group">
@@ -164,17 +195,23 @@
     const ADMIN_PASS = "1234";
 
     window.onload = function() {
-      loadHistory();
+      loadData();
     };
 
     function addRecord() {
       const type = document.getElementById('type').value;
       const name = document.getElementById('name').value;
+      const amount = parseInt(document.getElementById('amount').value, 10);
       const detail = document.getElementById('detail').value;
       const inputPass = document.getElementById('adminPassword').value;
 
       if (!name) {
         alert('名前を入力してください');
+        return;
+      }
+
+      if (isNaN(amount) || amount <= 0) {
+        alert('数量を正しく入力してください');
         return;
       }
 
@@ -184,18 +221,20 @@
       }
 
       const date = new Date().toLocaleDateString('ja-JP');
-      const record = { id: Date.now(), date, type, name, detail };
+      const record = { id: Date.now(), date, type, name, amount, detail };
 
       let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
       records.unshift(record);
       localStorage.setItem('tsuruRecords', JSON.stringify(records));
 
+      // フォームリセット
       document.getElementById('name').value = '';
+      document.getElementById('amount').value = '';
       document.getElementById('detail').value = '';
       document.getElementById('adminPassword').value = '';
 
       alert('送信完了しました！');
-      loadHistory();
+      loadData();
     }
 
     function deleteRecord(id) {
@@ -208,30 +247,41 @@
       let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
       records = records.filter(r => r.id !== id);
       localStorage.setItem('tsuruRecords', JSON.stringify(records));
-      loadHistory();
+      loadData();
     }
 
-    function loadHistory() {
+    function loadData() {
       const list = document.getElementById('historyList');
       list.innerHTML = '';
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
+      let total = 0;
+
       if (records.length === 0) {
         list.innerHTML = '<li style="border: 2px dashed #999999; background:#ffffff; color:#666666;">履歴はありません</li>';
-        return;
+      } else {
+        records.forEach(r => {
+          // 合計羽数の計算（受鶴ならプラス、送鶴ならマイナス）
+          if (r.type.includes("受鶴")) {
+            total += r.amount;
+          } else {
+            total -= r.amount;
+          }
+
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <div>
+              <strong>${r.date} 【${r.type}】 ${r.amount}羽</strong><br>
+              ${r.name} ${r.detail ? '(' + r.detail + ')' : ''}
+            </div>
+            <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
+          `;
+          list.appendChild(li);
+        });
       }
 
-      records.forEach(r => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <div>
-            <strong>${r.date} 【${r.type}】</strong><br>
-            ${r.name} (${r.detail || '詳細なし'})
-          </div>
-          <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
-        `;
-        list.appendChild(li);
-      });
+      // 合計を画面へセット
+      document.getElementById('totalTsuru').textContent = total;
     }
   </script>
 
