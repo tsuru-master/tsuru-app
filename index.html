@@ -9,68 +9,85 @@
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #f4f6f8;
+      /* 薄い水色とピンクのグラデーション背景 */
+      background: linear-gradient(135deg, #e8f4f8 0%, #fcedf2 100%);
       margin: 0;
       padding: 16px;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
+      align-items: flex-start;
+      box-sizing: border-box;
     }
     .container {
       background: #ffffff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
       width: 100%;
       max-width: 400px;
+      border: 1px solid #dbe6ec;
     }
     h1 {
-      font-size: 18px;
-      color: #333;
+      font-size: 20px;
+      color: #4a5568; /* シックなグレー */
       text-align: center;
       margin-top: 0;
       margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px dashed #f3c4d3; /* 薄いピンクの破線 */
     }
     .form-group {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     label {
       display: block;
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 4px;
+      font-size: 13px;
+      color: #718096; /* 落ち着いたグレー */
+      font-weight: bold;
+      margin-bottom: 6px;
     }
     input, select {
       width: 100%;
       padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      border: 1px solid #cbd5e0; /* 薄いグレー枠 */
+      border-radius: 8px;
       box-sizing: border-box;
       font-size: 14px;
+      background-color: #f7fafc; /* 超淡いグレー背景 */
+      color: #2d3748;
     }
-    button {
+    input:focus, select:focus {
+      outline: none;
+      border-color: #90cdf4; /* Focus時は薄い水色 */
+      box-shadow: 0 0 0 3px rgba(144, 205, 244, 0.3);
+    }
+    .btn-submit {
       width: 100%;
       padding: 12px;
-      background-color: #007aff;
-      color: white;
+      background-color: #f6a5c0; /* 上品な薄ピンク */
+      color: #ffffff;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
       margin-top: 10px;
+      box-shadow: 0 4px 10px rgba(246, 165, 192, 0.4);
+      transition: background-color 0.2s;
     }
-    button:active {
-      background-color: #0056b3;
+    .btn-submit:active {
+      background-color: #ed89a8;
     }
     .history {
       margin-top: 24px;
-      border-top: 1px solid #eee;
+      border-top: 2px solid #e2e8f0; /* グレーの区切り線 */
       padding-top: 16px;
     }
     .history h2 {
-      font-size: 14px;
-      color: #333;
-      margin-bottom: 8px;
+      font-size: 15px;
+      color: #4a5568; /* グレー */
+      margin-bottom: 10px;
     }
     ul {
       list-style: none;
@@ -78,13 +95,29 @@
       margin: 0;
     }
     li {
-      background: #f9f9f9;
-      padding: 8px 12px;
-      border-radius: 6px;
-      margin-bottom: 6px;
+      background: #edf2f7; /* 明るいグレー背景 */
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
       font-size: 13px;
+      color: #2d3748;
+      border-left: 4px solid #63b3ed; /* 左端に薄い水色のワンポイント */
       display: flex;
       justify-content: space-between;
+      align-items: center;
+    }
+    .delete-btn {
+      background: #e2e8f0;
+      color: #718096;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .delete-btn:active {
+      background: #fed7d7;
+      color: #e53e3e;
     }
   </style>
 </head>
@@ -111,16 +144,22 @@
       <input type="text" id="detail" placeholder="例：100羽 / 〇〇件">
     </div>
 
-    <button onclick="addRecord()">記録を保存</button>
+    <div class="form-group">
+      <label>管理者パスワード</label>
+      <input type="password" id="adminPassword" placeholder="パスワードを入力">
+    </div>
+
+    <button class="btn-submit" onclick="addRecord()">送信（記録）</button>
 
     <div class="history">
-      <h2>履歴</h2>
+      <h2>記録履歴</h2>
       <ul id="historyList"></ul>
     </div>
   </div>
 
   <script>
-    // 画面が開いたときにLocalStorageから過去のデータを読み込む
+    const ADMIN_PASS = "1234";
+
     window.onload = function() {
       loadHistory();
     };
@@ -129,24 +168,43 @@
       const type = document.getElementById('type').value;
       const name = document.getElementById('name').value;
       const detail = document.getElementById('detail').value;
+      const inputPass = document.getElementById('adminPassword').value;
 
       if (!name) {
         alert('名前を入力してください');
         return;
       }
 
-      const date = new Date().toLocaleDateString('ja-JP');
-      const record = { date, type, name, detail };
+      if (inputPass !== ADMIN_PASS) {
+        alert('管理者パスワードが違います');
+        return;
+      }
 
-      // ローカルストレージに保存
+      const date = new Date().toLocaleDateString('ja-JP');
+      const record = { id: Date.now(), date, type, name, detail };
+
       let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
       records.unshift(record);
       localStorage.setItem('tsuruRecords', JSON.stringify(records));
 
-      // 入力欄をクリア
       document.getElementById('name').value = '';
       document.getElementById('detail').value = '';
+      document.getElementById('adminPassword').value = '';
 
+      alert('送信完了しました！');
+      loadHistory();
+    }
+
+    function deleteRecord(id) {
+      const pass = prompt('削除するには管理者パスワードを入力してください:');
+      if (pass !== ADMIN_PASS) {
+        alert('パスワードが正しくありません');
+        return;
+      }
+
+      let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+      records = records.filter(r => r.id !== id);
+      localStorage.setItem('tsuruRecords', JSON.stringify(records));
       loadHistory();
     }
 
@@ -155,13 +213,27 @@
       list.innerHTML = '';
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
+      if (records.length === 0) {
+        list.innerHTML = '<li style="border-left:none; background:#f7fafc; color:#a0aec0;">履歴はありません</li>';
+        return;
+      }
+
       records.forEach(r => {
         const li = document.createElement('li');
-        li.textContent = `${r.date} 【${r.type}】 ${r.name} (${r.detail || '詳細なし'})`;
+        li.innerHTML = `
+          <div>
+            <strong>${r.date} 【${r.type}】</strong><br>
+            ${r.name} (${r.detail || '詳細なし'})
+          </div>
+          <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
+        `;
         list.appendChild(li);
       });
     }
   </script>
+
+</body>
+</html>
 
 </body>
 </html>
