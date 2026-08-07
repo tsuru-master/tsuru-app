@@ -11,29 +11,157 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #f4f6f8;
       margin: 0;
-      padding: 20px;
+      padding: 16px;
       display: flex;
       justify-content: center;
     }
-    .card {
+    .container {
       background: #ffffff;
-      padding: 24px;
+      padding: 20px;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
       width: 100%;
       max-width: 400px;
-      text-align: center;
     }
     h1 {
-      font-size: 20px;
-      color: #333333;
+      font-size: 18px;
+      color: #333;
+      text-align: center;
+      margin-top: 0;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #007aff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:active {
+      background-color: #0056b3;
+    }
+    .history {
+      margin-top: 24px;
+      border-top: 1px solid #eee;
+      padding-top: 16px;
+    }
+    .history h2 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
       margin: 0;
+    }
+    li {
+      background: #f9f9f9;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
     }
   </style>
 </head>
 <body>
-  <div class="card">
+
+  <div class="container">
     <h1>送鶴・受鶴 管理システム</h1>
+
+    <div class="form-group">
+      <label>区分</label>
+      <select id="type">
+        <option value="送鶴">送鶴</option>
+        <option value="受鶴">受鶴</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>相手の名前</label>
+      <input type="text" id="name" placeholder="例：山田太郎">
+    </div>
+
+    <div class="form-group">
+      <label>数量・詳細</label>
+      <input type="text" id="detail" placeholder="例：100羽 / 〇〇件">
+    </div>
+
+    <button onclick="addRecord()">記録を保存</button>
+
+    <div class="history">
+      <h2>履歴</h2>
+      <ul id="historyList"></ul>
+    </div>
   </div>
+
+  <script>
+    // 画面が開いたときにLocalStorageから過去のデータを読み込む
+    window.onload = function() {
+      loadHistory();
+    };
+
+    function addRecord() {
+      const type = document.getElementById('type').value;
+      const name = document.getElementById('name').value;
+      const detail = document.getElementById('detail').value;
+
+      if (!name) {
+        alert('名前を入力してください');
+        return;
+      }
+
+      const date = new Date().toLocaleDateString('ja-JP');
+      const record = { date, type, name, detail };
+
+      // ローカルストレージに保存
+      let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+      records.unshift(record);
+      localStorage.setItem('tsuruRecords', JSON.stringify(records));
+
+      // 入力欄をクリア
+      document.getElementById('name').value = '';
+      document.getElementById('detail').value = '';
+
+      loadHistory();
+    }
+
+    function loadHistory() {
+      const list = document.getElementById('historyList');
+      list.innerHTML = '';
+      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+
+      records.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `${r.date} 【${r.type}】 ${r.name} (${r.detail || '詳細なし'})`;
+        list.appendChild(li);
+      });
+    }
+  </script>
+
 </body>
 </html>
