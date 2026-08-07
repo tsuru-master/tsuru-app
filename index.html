@@ -9,8 +9,8 @@
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      /* 薄い水色とピンクのグラデーション背景 */
-      background: linear-gradient(135deg, #e8f4f8 0%, #fcedf2 100%);
+      /* 背景：鮮やかな水色とピンクのグラデーション */
+      background: linear-gradient(135deg, #70d6ff 0%, #ff70a6 100%);
       margin: 0;
       padding: 16px;
       min-height: 100vh;
@@ -23,71 +23,73 @@
       background: #ffffff;
       padding: 24px;
       border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
       width: 100%;
       max-width: 400px;
-      border: 1px solid #dbe6ec;
+      border: 3px solid #333333; /* 濃いグレーの太枠 */
     }
     h1 {
       font-size: 20px;
-      color: #4a5568; /* シックなグレー */
+      color: #222222; /* くっきり濃いグレー */
       text-align: center;
       margin-top: 0;
       margin-bottom: 20px;
       padding-bottom: 10px;
-      border-bottom: 2px dashed #f3c4d3; /* 薄いピンクの破線 */
+      border-bottom: 3px solid #ff477e; /* はっきりとしたピンク下線 */
     }
     .form-group {
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     label {
       display: block;
-      font-size: 13px;
-      color: #718096; /* 落ち着いたグレー */
+      font-size: 14px;
+      color: #333333; /* はっきりとした文字色 */
       font-weight: bold;
       margin-bottom: 6px;
     }
     input, select {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #cbd5e0; /* 薄いグレー枠 */
+      padding: 12px;
+      border: 2px solid #555555; /* 濃いグレー枠 */
       border-radius: 8px;
       box-sizing: border-box;
-      font-size: 14px;
-      background-color: #f7fafc; /* 超淡いグレー背景 */
-      color: #2d3748;
+      font-size: 15px;
+      background-color: #ffffff;
+      color: #111111;
+      font-weight: 500;
     }
     input:focus, select:focus {
       outline: none;
-      border-color: #90cdf4; /* Focus時は薄い水色 */
-      box-shadow: 0 0 0 3px rgba(144, 205, 244, 0.3);
+      border-color: #0077b6; /* 濃い水色フォーカス */
+      box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.3);
     }
     .btn-submit {
       width: 100%;
-      padding: 12px;
-      background-color: #f6a5c0; /* 上品な薄ピンク */
+      padding: 14px;
+      background-color: #ff2a70; /* 鮮烈なピンク */
       color: #ffffff;
       border: none;
       border-radius: 8px;
-      font-size: 16px;
+      font-size: 17px;
       font-weight: bold;
       cursor: pointer;
       margin-top: 10px;
-      box-shadow: 0 4px 10px rgba(246, 165, 192, 0.4);
-      transition: background-color 0.2s;
+      box-shadow: 0 4px 12px rgba(255, 42, 112, 0.4);
+      transition: background-color 0.2s, transform 0.1s;
     }
     .btn-submit:active {
-      background-color: #ed89a8;
+      background-color: #d90429;
+      transform: scale(0.98);
     }
     .history {
       margin-top: 24px;
-      border-top: 2px solid #e2e8f0; /* グレーの区切り線 */
+      border-top: 3px solid #333333; /* 濃いグレーの仕切り */
       padding-top: 16px;
     }
     .history h2 {
-      font-size: 15px;
-      color: #4a5568; /* グレー */
-      margin-bottom: 10px;
+      font-size: 16px;
+      color: #222222;
+      margin-bottom: 12px;
     }
     ul {
       list-style: none;
@@ -95,29 +97,30 @@
       margin: 0;
     }
     li {
-      background: #edf2f7; /* 明るいグレー背景 */
-      padding: 10px 12px;
+      background: #e0f2fe; /* はっきりわかる薄水色 */
+      padding: 12px;
       border-radius: 8px;
-      margin-bottom: 8px;
-      font-size: 13px;
-      color: #2d3748;
-      border-left: 4px solid #63b3ed; /* 左端に薄い水色のワンポイント */
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #111111;
+      border: 2px solid #0284c7; /* 水色の太めボーダー */
+      border-left: 6px solid #ff2a70; /* 左端に強めのピンク線 */
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
     .delete-btn {
-      background: #e2e8f0;
-      color: #718096;
-      border: 1px solid #cbd5e0;
-      border-radius: 4px;
-      padding: 4px 8px;
-      font-size: 11px;
+      background: #4b5563; /* 濃いグレーボタン */
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: bold;
       cursor: pointer;
     }
     .delete-btn:active {
-      background: #fed7d7;
-      color: #e53e3e;
+      background: #dc2626; /* 削除時赤色 */
     }
   </style>
 </head>
@@ -214,7 +217,7 @@
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
       if (records.length === 0) {
-        list.innerHTML = '<li style="border-left:none; background:#f7fafc; color:#a0aec0;">履歴はありません</li>';
+        list.innerHTML = '<li style="border: 2px dashed #999999; background:#ffffff; color:#666666;">履歴はありません</li>';
         return;
       }
 
@@ -231,9 +234,6 @@
       });
     }
   </script>
-
-</body>
-</html>
 
 </body>
 </html>
