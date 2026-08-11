@@ -98,6 +98,29 @@
       border-color: #0077b6;
       box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.3);
     }
+    
+    /* 一般向けIDタグエリア */
+    .id-tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .id-tag {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #0284c7;
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .id-tag:active {
+      background-color: #bae6fd;
+    }
+
     .btn-submit {
       width: 100%;
       padding: 14px;
@@ -230,7 +253,7 @@
     <!-- 現在所持している鶴の表示エリア -->
     <div class="total-card">
       <div class="total-title">現在持っている鶴（全体合計）</div>
-      <div class="total-count"><span id="totalTsuru">0</span> 羽</div>
+      <div class="total-count"><span id="totalTsuru">0</span> 鶴</div>
     </div>
 
     <div class="form-group">
@@ -243,11 +266,13 @@
 
     <div class="form-group">
       <label>相手のID・名前</label>
+      <!-- 登録されているIDのクイック選択エリア（一般画面用） -->
+      <div class="id-tag-list" id="publicIdTags"></div>
       <input type="text" id="name" placeholder="例：山田太郎">
     </div>
 
     <div class="form-group">
-      <label>数量（羽数）</label>
+      <label>数量</label>
       <input type="number" id="amount" placeholder="例：10" min="1">
     </div>
 
@@ -343,13 +368,15 @@
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
       let total = 0;
+      const idSet = new Set();
 
       if (records.length === 0) {
         list.innerHTML = '<li style="border: 2px dashed #999999; background:#ffffff; color:#666666;">履歴はありません</li>';
       } else {
         records.forEach(r => {
-          // NaN対策：数値として解析できない場合のデフォルト処理
           const amt = parseInt(r.amount, 10) || 0;
+
+          if (r.name) idSet.add(r.name);
 
           if (r.type.includes("受鶴")) {
             total += amt;
@@ -360,8 +387,8 @@
           const li = document.createElement('li');
           li.innerHTML = `
             <div>
-              <strong>${r.date} 【${r.type}】 ${amt}羽</strong><br>
-              ${r.name} ${r.detail ? '(' + r.detail + ')' : ''}
+              <strong>${r.date} 【${r.type}】 ${amt} 鶴</strong><br>
+              ${r.name} ${r.detail ? '(' + r.detail ? r.detail : '' + ')' : ''}
             </div>
             <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
           `;
@@ -369,11 +396,31 @@
         });
       }
 
-      // 総数の表示（NaNにならないよう数値を保護）
       document.getElementById('totalTsuru').textContent = isNaN(total) ? 0 : total;
+
+      // 一般画面用のIDタグ一覧を更新
+      renderPublicIdTags(Array.from(idSet));
     }
 
-    // 管理者用 ID毎の所有鶴数表示
+    // 一般画面へ登録済みIDタグを表示する処理
+    function renderPublicIdTags(idArray) {
+      const tagContainer = document.getElementById('publicIdTags');
+      tagContainer.innerHTML = '';
+
+      if (idArray.length > 0) {
+        idArray.forEach(idName => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'id-tag';
+          btn.textContent = idName;
+          btn.onclick = function() {
+            document.getElementById('name').value = idName;
+          };
+          tagContainer.appendChild(btn);
+        });
+      }
+    }
+
     function openAdminIdList() {
       const pass = prompt('管理者パスワードを入力してください:');
       if (pass !== ADMIN_PASS) {
@@ -392,7 +439,6 @@
           idTotals[r.name] = 0;
         }
 
-        // 受鶴ならプラス、送鶴ならマイナス
         if (r.type.includes("受鶴")) {
           idTotals[r.name] += amt;
         } else {
@@ -410,7 +456,7 @@
         keys.forEach(idName => {
           const count = idTotals[idName];
           const li = document.createElement('li');
-          li.innerHTML = `<span>${idName}</span> <span style="color:#0284c7;">${count} 羽</span>`;
+          li.innerHTML = `<span>${idName}</span> <span style="color:#0284c7;">${count} 鶴</span>`;
           container.appendChild(li);
         });
       }
