@@ -221,7 +221,7 @@
       padding: 20px;
       border-radius: 12px;
       width: 90%;
-      max-width: 360px;
+      max-width: 380px;
       border: 3px solid #333333;
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
@@ -233,7 +233,7 @@
       padding-bottom: 8px;
     }
     .id-list {
-      max-height: 240px;
+      max-height: 280px;
       overflow-y: auto;
       margin: 12px 0;
       padding: 0;
@@ -253,7 +253,24 @@
     .id-info-row {
       display: flex;
       justify-content: space-between;
+      align-items: center;
       width: 100%;
+    }
+    .status-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 4px;
+    }
+    .status-online {
+      background-color: #d1fae5;
+      color: #047857;
+      border: 1px solid #10b981;
+    }
+    .status-offline {
+      background-color: #f3f4f6;
+      color: #6b7280;
+      border: 1px solid #d1d5db;
     }
     .id-action-row {
       display: flex;
@@ -344,15 +361,15 @@
 
       <div class="form-group">
         <label>区分</label>
-        <select id="type">
+        <select id="type" onchange="toggleTargetInput()">
           <option value="受鶴">受鶴（増える）</option>
           <option value="送鶴">送鶴（減る）</option>
         </select>
       </div>
 
-      <div class="form-group">
-        <label>対象の相手ID（送鶴の場合のみ指定、空欄可）</label>
-        <input type="text" id="targetId" placeholder="例：鈴木花子（空欄でもOK）">
+      <div class="form-group" id="targetIdGroup" style="display: none;">
+        <label>送鶴相手のID（登録済みのIDのみ）</label>
+        <input type="text" id="targetId" placeholder="例：鈴木花子">
       </div>
 
       <div class="form-group">
@@ -378,7 +395,7 @@
   <!-- 管理者用モーダル -->
   <div class="modal-overlay" id="idModal">
     <div class="modal-content">
-      <h3>管理者メニュー（ID管理）</h3>
+      <h3>管理者メニュー（ID・オンライン状態管理）</h3>
       <ul class="id-list" id="idListContainer"></ul>
       <button class="btn-reset-pass" onclick="resetAllUserPasswords()">🚨 全ユーザーのパスワード・IDを一括初期化</button>
       <button class="btn-close" onclick="closeAdminIdList()">閉じる</button>
@@ -394,9 +411,21 @@
       const savedUser = sessionStorage.getItem('tsuruLoggedInUser');
       if (savedUser) {
         loggedInUser = savedUser;
+        setOnlineStatus(loggedInUser, true);
         showApp();
       }
     };
+
+    function setOnlineStatus(id, isOnline) {
+      if (!id) return;
+      let activeUsers = JSON.parse(localStorage.getItem('tsuruActiveUsers')) || {};
+      if (isOnline) {
+        activeUsers[id] = Date.now();
+      } else {
+        delete activeUsers[id];
+      }
+      localStorage.setItem('tsuruActiveUsers', JSON.stringify(activeUsers));
+    }
 
     function toggleAuthMode() {
       isRegisterMode = !isRegisterMode;
@@ -438,6 +467,7 @@
         alert('アカウント登録が完了しました！ログインします。');
         loggedInUser = id;
         sessionStorage.setItem('tsuruLoggedInUser', id);
+        setOnlineStatus(id, true);
         showApp();
       } else {
         if (!userPasswords[id]) {
@@ -450,6 +480,7 @@
         }
         loggedInUser = id;
         sessionStorage.setItem('tsuruLoggedInUser', id);
+        setOnlineStatus(id, true);
         showApp();
       }
 
@@ -462,14 +493,28 @@
       document.getElementById('appCard').style.display = 'block';
       document.getElementById('currentUserId').textContent = loggedInUser;
       document.getElementById('targetUserName').textContent = loggedInUser;
+      toggleTargetInput();
       loadData();
     }
 
     function logout() {
+      if (loggedInUser) {
+        setOnlineStatus(loggedInUser, false);
+      }
       sessionStorage.removeItem('tsuruLoggedInUser');
       loggedInUser = null;
       document.getElementById('appCard').style.display = 'none';
       document.getElementById('authCard').style.display = 'block';
+    }
+
+    function toggleTargetInput() {
+      const type = document.getElementById('type').value;
+      const targetGroup = document.getElementById('targetIdGroup');
+      if (type.includes("送鶴")) {
+        targetGroup.style.display = 'block';
+      } else {
+        targetGroup.style.display = 'none';
+      }
     }
 
     function getUserBalance(name) {
@@ -502,6 +547,22 @@
       }
 
       if (type.includes("送鶴")) {
+        if (!targetId) {
+          alert("送鶴相手のIDを入力してください");
+          return;
+        }
+
+        if (targetId === loggedInUser) {
+          alert("自分自身に送鶴することはできません");
+          return;
+        }
+
+        const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
+        if (!userPasswords[targetId]) {
+          alert(`「${targetId}」は登録されていないIDです。登録されているユーザーのIDを指定してください。`);
+          return;
+        }
+
         const currentBalance = getUserBalance(loggedInUser);
         if (currentBalance <= 0) {
           alert("あなたは鶴を持ってないペニュ🐧");
@@ -515,10 +576,24 @@
 
       const date = new Date().toLocaleDateString('ja-JP');
       const detailText = targetId ? `相手:${targetId} ${detail}` : detail;
-      const record = { id: Date.now(), date, type, name: loggedInUser, amount, detail: detailText };
-
+      
       let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
-      records.unshift(record);
+
+      const sendRecord = { id: Date.now(), date, type, name: loggedInUser, amount, detail: detailText };
+      records.unshift(sendRecord);
+
+      if (type.includes("送鶴") && targetId) {
+        const receiveRecord = {
+          id: Date.now() + 1,
+          date,
+          type: "受鶴",
+          name: targetId,
+          amount,
+          detail: `差出人:${loggedInUser} ${detail}`
+        };
+        records.unshift(receiveRecord);
+      }
+
       localStorage.setItem('tsuruRecords', JSON.stringify(records));
 
       document.getElementById('amount').value = '';
@@ -547,7 +622,6 @@
       list.innerHTML = '';
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
-      // 自分のレコードのみフィルタリング
       const myRecords = records.filter(r => r.name === loggedInUser);
 
       if (myRecords.length === 0) {
@@ -586,43 +660,31 @@
     }
 
     function renderAdminModalList() {
-      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
       const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-      const idTotals = {};
-
-      records.forEach(r => {
-        if (!r.name) return;
-        const amt = parseInt(r.amount, 10) || 0;
-        if (!idTotals[r.name]) idTotals[r.name] = 0;
-
-        if (r.type.includes("受鶴")) {
-          idTotals[r.name] += amt;
-        } else {
-          idTotals[r.name] -= amt;
-        }
-      });
-
-      Object.keys(userPasswords).forEach(idName => {
-        if (idTotals[idName] === undefined) {
-          idTotals[idName] = 0;
-        }
-      });
+      const activeUsers = JSON.parse(localStorage.getItem('tsuruActiveUsers')) || {};
 
       const container = document.getElementById('idListContainer');
       container.innerHTML = '';
 
-      const keys = Object.keys(idTotals);
+      const keys = Object.keys(userPasswords);
       if (keys.length === 0) {
         container.innerHTML = '<li style="border-left:none; font-weight:normal; color:#666;">登録されたIDはありません</li>';
       } else {
         keys.forEach(idName => {
-          const count = idTotals[idName];
-          const hasPass = !!userPasswords[idName];
+          const count = getUserBalance(idName);
+          const isOnline = !!activeUsers[idName];
+          const statusHtml = isOnline 
+            ? '<span class="status-badge status-online">🟢 ログイン中</span>' 
+            : '<span class="status-badge status-offline">⚪ オフライン</span>';
+
           const li = document.createElement('li');
           
           li.innerHTML = `
             <div class="id-info-row">
-              <span>${idName} ${hasPass ? '🔒' : ''}</span>
+              <div>
+                <span>${idName}</span>
+                ${statusHtml}
+              </div>
               <span style="color:#0284c7;">${count} 鶴</span>
             </div>
             <div class="id-action-row">
@@ -664,17 +726,17 @@
       renderAdminModalList();
     }
 
-    /* 管理者権限：指定IDの完全削除機能 */
     function adminDeleteId(idName) {
       if (confirm(`本当にID【${idName}】を完全に削除しますか？\n（ログインできなくなります）`)) {
         let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
         delete userPasswords[idName];
         localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
 
+        setOnlineStatus(idName, false);
+
         alert(`ID【${idName}】を削除しました。`);
         renderAdminModalList();
         
-        // もし現在ログイン中のIDを削除した場合はログアウト処理を行う
         if (loggedInUser === idName) {
           logout();
           closeAdminIdList();
@@ -685,6 +747,7 @@
     function resetAllUserPasswords() {
       if (confirm('登録されているすべての「ID・パスワード」を初期化（削除）しますか？')) {
         localStorage.removeItem('tsuruUserPasswords');
+        localStorage.removeItem('tsuruActiveUsers');
         alert('全アカウントを初期化しました。');
         renderAdminModalList();
         logout();
