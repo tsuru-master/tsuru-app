@@ -69,7 +69,7 @@
       margin-bottom: 20px;
       border: 2px solid #eab308;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-      display: none; /* 名前入力時に表示 */
+      display: none;
     }
     .user-title {
       font-size: 12px;
@@ -374,6 +374,23 @@
       }
     }
 
+    function getUserBalance(name) {
+      if (!name) return 0;
+      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+      let count = 0;
+      records.forEach(r => {
+        if (r.name === name) {
+          const amt = parseInt(r.amount, 10) || 0;
+          if (r.type.includes("受鶴")) {
+            count += amt;
+          } else {
+            count -= amt;
+          }
+        }
+      });
+      return count;
+    }
+
     function updateUserTsuruDisplay() {
       const name = document.getElementById('name').value.trim();
       const userCard = document.getElementById('userCard');
@@ -385,20 +402,7 @@
         return;
       }
 
-      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
-      let count = 0;
-
-      records.forEach(r => {
-        if (r.name === name) {
-          const amt = parseInt(r.amount, 10) || 0;
-          if (r.type.includes("受鶴")) {
-            count += amt;
-          } else {
-            count -= amt;
-          }
-        }
-      });
-
+      const count = getUserBalance(name);
       targetUserName.textContent = name;
       userTsuru.textContent = count;
       userCard.style.display = "block";
@@ -453,6 +457,17 @@
       }
 
       if (type.includes("送鶴")) {
+        // 残高チェック
+        const currentBalance = getUserBalance(name);
+        if (currentBalance <= 0) {
+          alert("あなたは鶴を持ってないペニュ🐧");
+          return;
+        }
+        if (currentBalance < amount) {
+          alert(`所有している鶴数（${currentBalance}鶴）を超えて送信することはできません`);
+          return;
+        }
+
         const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
         const registeredPass = userPasswords[name];
         const inputPass = document.getElementById('userPassword').value;
