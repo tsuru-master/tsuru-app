@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>送鶴・受鶴 管理システム</title>
+  <title>鶴pay</title>
   <link rel="apple-touch-icon" href="https://tsuru-master.github.io/tsuru-app/icon.png">
   <link rel="icon" href="https://tsuru-master.github.io/tsuru-app/icon.png">
   <style>
@@ -26,17 +26,18 @@
       width: 100%;
       max-width: 400px;
       border: 3px solid #333333;
+      position: relative;
     }
     h1 {
-      font-size: 20px;
+      font-size: 24px;
       color: #222222;
       text-align: center;
       margin-top: 0;
       margin-bottom: 16px;
       padding-bottom: 10px;
       border-bottom: 3px solid #ff477e;
+      letter-spacing: 1px;
     }
-    /* 所持数表示エリア */
     .total-card {
       background: #0284c7;
       color: #ffffff;
@@ -56,6 +57,20 @@
       font-size: 32px;
       font-weight: bold;
       margin-top: 4px;
+    }
+    .admin-nav {
+      text-align: right;
+      margin-bottom: 16px;
+    }
+    .btn-admin-view {
+      background-color: #333333;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
     }
     .form-group {
       margin-bottom: 16px;
@@ -142,16 +157,79 @@
     .delete-btn:active {
       background: #dc2626;
     }
+
+    /* モーダル表示エリア */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 350px;
+      border: 3px solid #333333;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-content h3 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #222222;
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 8px;
+    }
+    .id-list {
+      max-height: 250px;
+      overflow-y: auto;
+      margin: 12px 0;
+      padding: 0;
+    }
+    .id-list li {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-left: 4px solid #0284c7;
+      margin-bottom: 6px;
+      padding: 10px 12px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-close {
+      width: 100%;
+      padding: 10px;
+      background-color: #4b5563;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>送鶴・受鶴 管理システム</h1>
+    <h1>鶴pay</h1>
+
+    <!-- 管理者権限メニュー -->
+    <div class="admin-nav">
+      <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者用 ID別鶴数一覧</button>
+    </div>
 
     <!-- 現在所持している鶴の表示エリア -->
     <div class="total-card">
-      <div class="total-title">現在持っている鶴</div>
+      <div class="total-title">現在持っている鶴（全体合計）</div>
       <div class="total-count"><span id="totalTsuru">0</span> 羽</div>
     </div>
 
@@ -164,7 +242,7 @@
     </div>
 
     <div class="form-group">
-      <label>相手の名前</label>
+      <label>相手のID・名前</label>
       <input type="text" id="name" placeholder="例：山田太郎">
     </div>
 
@@ -191,6 +269,15 @@
     </div>
   </div>
 
+  <!-- 管理者ID・鶴数一覧用モーダル -->
+  <div class="modal-overlay" id="idModal">
+    <div class="modal-content">
+      <h3>ID毎の所有鶴数一覧</h3>
+      <ul class="id-list" id="idListContainer"></ul>
+      <button class="btn-close" onclick="closeAdminIdList()">閉じる</button>
+    </div>
+  </div>
+
   <script>
     const ADMIN_PASS = "1234";
 
@@ -200,18 +287,19 @@
 
     function addRecord() {
       const type = document.getElementById('type').value;
-      const name = document.getElementById('name').value;
-      const amount = parseInt(document.getElementById('amount').value, 10);
+      const name = document.getElementById('name').value.trim();
+      const rawAmount = document.getElementById('amount').value;
+      const amount = parseInt(rawAmount, 10);
       const detail = document.getElementById('detail').value;
       const inputPass = document.getElementById('adminPassword').value;
 
       if (!name) {
-        alert('名前を入力してください');
+        alert('名前・IDを入力してください');
         return;
       }
 
       if (isNaN(amount) || amount <= 0) {
-        alert('数量を正しく入力してください');
+        alert('数量を正しく数字で入力してください');
         return;
       }
 
@@ -227,7 +315,6 @@
       records.unshift(record);
       localStorage.setItem('tsuruRecords', JSON.stringify(records));
 
-      // フォームリセット
       document.getElementById('name').value = '';
       document.getElementById('amount').value = '';
       document.getElementById('detail').value = '';
@@ -261,17 +348,19 @@
         list.innerHTML = '<li style="border: 2px dashed #999999; background:#ffffff; color:#666666;">履歴はありません</li>';
       } else {
         records.forEach(r => {
-          // 合計羽数の計算（受鶴ならプラス、送鶴ならマイナス）
+          // NaN対策：数値として解析できない場合のデフォルト処理
+          const amt = parseInt(r.amount, 10) || 0;
+
           if (r.type.includes("受鶴")) {
-            total += r.amount;
+            total += amt;
           } else {
-            total -= r.amount;
+            total -= amt;
           }
 
           const li = document.createElement('li');
           li.innerHTML = `
             <div>
-              <strong>${r.date} 【${r.type}】 ${r.amount}羽</strong><br>
+              <strong>${r.date} 【${r.type}】 ${amt}羽</strong><br>
               ${r.name} ${r.detail ? '(' + r.detail + ')' : ''}
             </div>
             <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
@@ -280,8 +369,57 @@
         });
       }
 
-      // 合計を画面へセット
-      document.getElementById('totalTsuru').textContent = total;
+      // 総数の表示（NaNにならないよう数値を保護）
+      document.getElementById('totalTsuru').textContent = isNaN(total) ? 0 : total;
+    }
+
+    // 管理者用 ID毎の所有鶴数表示
+    function openAdminIdList() {
+      const pass = prompt('管理者パスワードを入力してください:');
+      if (pass !== ADMIN_PASS) {
+        alert('パスワードが違います');
+        return;
+      }
+
+      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+      const idTotals = {};
+
+      records.forEach(r => {
+        if (!r.name) return;
+        const amt = parseInt(r.amount, 10) || 0;
+
+        if (!idTotals[r.name]) {
+          idTotals[r.name] = 0;
+        }
+
+        // 受鶴ならプラス、送鶴ならマイナス
+        if (r.type.includes("受鶴")) {
+          idTotals[r.name] += amt;
+        } else {
+          idTotals[r.name] -= amt;
+        }
+      });
+
+      const container = document.getElementById('idListContainer');
+      container.innerHTML = '';
+
+      const keys = Object.keys(idTotals);
+      if (keys.length === 0) {
+        container.innerHTML = '<li style="border-left:none; font-weight:normal; color:#666;">登録されたIDはありません</li>';
+      } else {
+        keys.forEach(idName => {
+          const count = idTotals[idName];
+          const li = document.createElement('li');
+          li.innerHTML = `<span>${idName}</span> <span style="color:#0284c7;">${count} 羽</span>`;
+          container.appendChild(li);
+        });
+      }
+
+      document.getElementById('idModal').style.display = 'flex';
+    }
+
+    function closeAdminIdList() {
+      document.getElementById('idModal').style.display = 'none';
     }
   </script>
 
