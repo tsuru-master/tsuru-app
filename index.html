@@ -362,15 +362,15 @@
       </div>
 
       <div class="form-group">
-        <label>区分</label>
+        <label>なにをする？</label>
         <select id="type" onchange="toggleTargetInput()">
-          <option value="受鶴">受鶴（増える）</option>
-          <option value="送鶴">送鶴（減る）</option>
+          <option value="あげる">あげる（減る）</option>
+          <option value="もらう">もらう（増える）</option>
         </select>
       </div>
 
-      <div class="form-group" id="targetIdGroup" style="display: none;">
-        <label>送鶴相手のID（登録済みのIDのみ）</label>
+      <div class="form-group" id="targetIdGroup">
+        <label>だれにあげる？（相手のID）</label>
         <input type="text" id="targetId" placeholder="例：鈴木花子">
       </div>
 
@@ -512,7 +512,7 @@
     function toggleTargetInput() {
       const type = document.getElementById('type').value;
       const targetGroup = document.getElementById('targetIdGroup');
-      if (type.includes("送鶴")) {
+      if (type === "あげる") {
         targetGroup.style.display = 'block';
       } else {
         targetGroup.style.display = 'none';
@@ -526,7 +526,7 @@
       records.forEach(r => {
         if (r.name === name) {
           const amt = parseInt(r.amount, 10) || 0;
-          if (r.type.includes("受鶴")) {
+          if (r.type === "もらう" || r.type.includes("受鶴")) {
             count += amt;
           } else {
             count -= amt;
@@ -548,18 +548,19 @@
         return;
       }
 
-      if (type.includes("送鶴")) {
+      const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
+
+      if (type === "あげる") {
         if (!targetId) {
-          alert("送鶴相手のIDを入力してください");
+          alert("あげる相手のIDを入力してください");
           return;
         }
 
         if (targetId === loggedInUser) {
-          alert("自分自身に送鶴することはできません");
+          alert("自分自身にあげることはできません");
           return;
         }
 
-        const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
         if (!userPasswords[targetId]) {
           alert(`「${targetId}」は登録されていないIDです。登録されているユーザーのIDを指定してください。`);
           return;
@@ -571,7 +572,15 @@
           return;
         }
         if (currentBalance < amount) {
-          alert(`所有している鶴数（${currentBalance}鶴）を超えて送信することはできません`);
+          alert(`所有している鶴数（${currentBalance}鶴）を超えてあげることはできません`);
+          return;
+        }
+
+        // あげるときにパスワード認証を追加
+        const confirmPass = prompt(`【あげる確認】\n「${loggedInUser}」のパスワードを入力してください:`);
+        if (confirmPass === null) return; // キャンセルされた場合
+        if (confirmPass !== userPasswords[loggedInUser]) {
+          alert("パスワードが正しくありません。送信を中止しました。");
           return;
         }
       }
@@ -584,11 +593,11 @@
       const sendRecord = { id: Date.now(), date, type, name: loggedInUser, amount, detail: detailText };
       records.unshift(sendRecord);
 
-      if (type.includes("送鶴") && targetId) {
+      if (type === "あげる" && targetId) {
         const receiveRecord = {
           id: Date.now() + 1,
           date,
-          type: "受鶴",
+          type: "もらう",
           name: targetId,
           amount,
           detail: `差出人:${loggedInUser} ${detail}`
@@ -624,7 +633,6 @@
       list.innerHTML = '';
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
-      // ログイン中のユーザーIDに一致する全履歴（前回以前を含む）を抽出
       const myRecords = records.filter(r => r.name === loggedInUser);
 
       if (myRecords.length === 0) {
@@ -715,7 +723,7 @@
       const record = {
         id: Date.now(),
         date,
-        type: "受鶴",
+        type: "もらう",
         name: idName,
         amount: amount,
         detail: "管理者より特別付与"
