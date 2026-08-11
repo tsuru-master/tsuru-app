@@ -44,7 +44,7 @@
       border-radius: 12px;
       padding: 14px;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 12px;
       border: 2px solid #333333;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
@@ -58,6 +58,30 @@
       font-weight: bold;
       margin-top: 4px;
     }
+
+    /* 個人用鶴数表示カード */
+    .user-card {
+      background: #fef08a;
+      color: #854d0e;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      margin-bottom: 20px;
+      border: 2px solid #eab308;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+      display: none; /* 名前入力時に表示 */
+    }
+    .user-title {
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .user-count {
+      font-size: 26px;
+      font-weight: bold;
+      margin-top: 2px;
+      color: #713f12;
+    }
+
     .admin-nav {
       text-align: right;
       margin-bottom: 16px;
@@ -272,10 +296,16 @@
       <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者用 ID別鶴数一覧</button>
     </div>
 
-    <!-- 現在持っている鶴表示 -->
+    <!-- 全体合計カード -->
     <div class="total-card">
       <div class="total-title">現在持っている鶴（全体合計）</div>
       <div class="total-count"><span id="totalTsuru">0</span> 鶴</div>
+    </div>
+
+    <!-- 個人用鶴数表示カード（入力された名前の所有数） -->
+    <div class="user-card" id="userCard">
+      <div class="user-title"><span id="targetUserName">---</span> さんの所有鶴数</div>
+      <div class="user-count"><span id="userTsuru">0</span> 鶴</div>
     </div>
 
     <div class="form-group">
@@ -289,7 +319,7 @@
     <div class="form-group">
       <label>自分のID・名前（または相手のID）</label>
       <div class="id-tag-list" id="publicIdTags"></div>
-      <input type="text" id="name" placeholder="例：山田太郎">
+      <input type="text" id="name" placeholder="例：山田太郎" oninput="updateUserTsuruDisplay()">
       <button type="button" class="btn-pass-setting" onclick="setUserPassword()">🔒 入力中IDの個人パスワードを設定・更新</button>
     </div>
 
@@ -342,6 +372,36 @@
       } else {
         passContainer.style.display = "none";
       }
+    }
+
+    function updateUserTsuruDisplay() {
+      const name = document.getElementById('name').value.trim();
+      const userCard = document.getElementById('userCard');
+      const targetUserName = document.getElementById('targetUserName');
+      const userTsuru = document.getElementById('userTsuru');
+
+      if (!name) {
+        userCard.style.display = "none";
+        return;
+      }
+
+      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+      let count = 0;
+
+      records.forEach(r => {
+        if (r.name === name) {
+          const amt = parseInt(r.amount, 10) || 0;
+          if (r.type.includes("受鶴")) {
+            count += amt;
+          } else {
+            count -= amt;
+          }
+        }
+      });
+
+      targetUserName.textContent = name;
+      userTsuru.textContent = count;
+      userCard.style.display = "block";
     }
 
     function setUserPassword() {
@@ -473,6 +533,7 @@
 
       document.getElementById('totalTsuru').textContent = isNaN(total) ? 0 : total;
       renderPublicIdTags(Array.from(idSet));
+      updateUserTsuruDisplay();
     }
 
     function renderPublicIdTags(idArray) {
@@ -487,6 +548,7 @@
           btn.textContent = idName;
           btn.onclick = function() {
             document.getElementById('name').value = idName;
+            updateUserTsuruDisplay();
           };
           tagContainer.appendChild(btn);
         });
