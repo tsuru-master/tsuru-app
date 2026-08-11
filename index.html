@@ -99,7 +99,6 @@
       box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.3);
     }
     
-    /* 一般向けIDタグエリア */
     .id-tag-list {
       display: flex;
       flex-wrap: wrap;
@@ -119,6 +118,18 @@
     }
     .id-tag:active {
       background-color: #bae6fd;
+    }
+
+    .btn-pass-setting {
+      background-color: #e2e8f0;
+      color: #334155;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 6px;
     }
 
     .btn-submit {
@@ -211,7 +222,7 @@
       padding-bottom: 8px;
     }
     .id-list {
-      max-height: 250px;
+      max-height: 200px;
       overflow-y: auto;
       margin: 12px 0;
       padding: 0;
@@ -226,6 +237,18 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+    .btn-reset-pass {
+      width: 100%;
+      padding: 10px;
+      background-color: #dc2626;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-bottom: 8px;
     }
     .btn-close {
       width: 100%;
@@ -245,12 +268,11 @@
   <div class="container">
     <h1>鶴pay</h1>
 
-    <!-- 管理者権限メニュー -->
     <div class="admin-nav">
       <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者用 ID別鶴数一覧</button>
     </div>
 
-    <!-- 現在所持している鶴の表示エリア -->
+    <!-- 現在持っている鶴表示 -->
     <div class="total-card">
       <div class="total-title">現在持っている鶴（全体合計）</div>
       <div class="total-count"><span id="totalTsuru">0</span> 鶴</div>
@@ -258,17 +280,17 @@
 
     <div class="form-group">
       <label>区分</label>
-      <select id="type">
+      <select id="type" onchange="togglePasswordLabel()">
         <option value="受鶴">受鶴（増える）</option>
         <option value="送鶴">送鶴（減る）</option>
       </select>
     </div>
 
     <div class="form-group">
-      <label>相手のID・名前</label>
-      <!-- 登録されているIDのクイック選択エリア（一般画面用） -->
+      <label>自分のID・名前（または相手のID）</label>
       <div class="id-tag-list" id="publicIdTags"></div>
       <input type="text" id="name" placeholder="例：山田太郎">
+      <button type="button" class="btn-pass-setting" onclick="setUserPassword()">🔒 入力中IDの個人パスワードを設定・更新</button>
     </div>
 
     <div class="form-group">
@@ -281,9 +303,9 @@
       <input type="text" id="detail" placeholder="例：お礼用">
     </div>
 
-    <div class="form-group">
-      <label>管理者パスワード</label>
-      <input type="password" id="adminPassword" placeholder="パスワードを入力">
+    <div class="form-group" id="passContainer" style="display: none;">
+      <label id="passLabel">送信者の個人パスワード</label>
+      <input type="password" id="userPassword" placeholder="パスワードを入力">
     </div>
 
     <button class="btn-submit" onclick="addRecord()">送信（記録）</button>
@@ -294,11 +316,11 @@
     </div>
   </div>
 
-  <!-- 管理者ID・鶴数一覧用モーダル -->
   <div class="modal-overlay" id="idModal">
     <div class="modal-content">
       <h3>ID毎の所有鶴数一覧</h3>
       <ul class="id-list" id="idListContainer"></ul>
+      <button class="btn-reset-pass" onclick="resetAllUserPasswords()">🚨 一般用パスワードをすべて初期化</button>
       <button class="btn-close" onclick="closeAdminIdList()">閉じる</button>
     </div>
   </div>
@@ -308,7 +330,49 @@
 
     window.onload = function() {
       loadData();
+      togglePasswordLabel();
     };
+
+    function togglePasswordLabel() {
+      const type = document.getElementById('type').value;
+      const passContainer = document.getElementById('passContainer');
+      if (type.includes("送鶴")) {
+        passContainer.style.display = "block";
+      } else {
+        passContainer.style.display = "none";
+      }
+    }
+
+    function setUserPassword() {
+      const name = document.getElementById('name').value.trim();
+      if (!name) {
+        alert('まず名前・IDを入力してください');
+        return;
+      }
+
+      let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
+      const currentPass = userPasswords[name];
+
+      let newPass = "";
+      if (currentPass) {
+        const verify = prompt(`【${name}】の現在のパスワードを入力してください:`);
+        if (verify !== currentPass) {
+          alert('パスワードが違います。変更できません。');
+          return;
+        }
+        newPass = prompt(`【${name}】の新しいパスワードを入力してください:`);
+      } else {
+        newPass = prompt(`【${name}】用に登録するパスワードを決めて入力してください:`);
+      }
+
+      if (newPass && newPass.trim() !== "") {
+        userPasswords[name] = newPass.trim();
+        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
+        alert(`【${name}】の個人パスワードを設定しました！`);
+      } else {
+        alert('パスワードが入力されなかったため設定をキャンセルしました');
+      }
+    }
 
     function addRecord() {
       const type = document.getElementById('type').value;
@@ -316,7 +380,6 @@
       const rawAmount = document.getElementById('amount').value;
       const amount = parseInt(rawAmount, 10);
       const detail = document.getElementById('detail').value;
-      const inputPass = document.getElementById('adminPassword').value;
 
       if (!name) {
         alert('名前・IDを入力してください');
@@ -328,9 +391,20 @@
         return;
       }
 
-      if (inputPass !== ADMIN_PASS) {
-        alert('管理者パスワードが違います');
-        return;
+      if (type.includes("送鶴")) {
+        const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
+        const registeredPass = userPasswords[name];
+        const inputPass = document.getElementById('userPassword').value;
+
+        if (!registeredPass) {
+          alert(`【${name}】の個人パスワードが未設定です。「個人パスワードを設定・更新」ボタンから登録してください。`);
+          return;
+        }
+
+        if (inputPass !== registeredPass) {
+          alert('個人パスワードが正しくありません');
+          return;
+        }
       }
 
       const date = new Date().toLocaleDateString('ja-JP');
@@ -343,7 +417,7 @@
       document.getElementById('name').value = '';
       document.getElementById('amount').value = '';
       document.getElementById('detail').value = '';
-      document.getElementById('adminPassword').value = '';
+      document.getElementById('userPassword').value = '';
 
       alert('送信完了しました！');
       loadData();
@@ -388,7 +462,7 @@
           li.innerHTML = `
             <div>
               <strong>${r.date} 【${r.type}】 ${amt} 鶴</strong><br>
-              ${r.name} ${r.detail ? '(' + r.detail ? r.detail : '' + ')' : ''}
+              ${r.name} ${r.detail ? '(' + r.detail + ')' : ''}
             </div>
             <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
           `;
@@ -397,12 +471,9 @@
       }
 
       document.getElementById('totalTsuru').textContent = isNaN(total) ? 0 : total;
-
-      // 一般画面用のIDタグ一覧を更新
       renderPublicIdTags(Array.from(idSet));
     }
 
-    // 一般画面へ登録済みIDタグを表示する処理
     function renderPublicIdTags(idArray) {
       const tagContainer = document.getElementById('publicIdTags');
       tagContainer.innerHTML = '';
@@ -462,6 +533,13 @@
       }
 
       document.getElementById('idModal').style.display = 'flex';
+    }
+
+    function resetAllUserPasswords() {
+      if (confirm('登録されているすべての「個人パスワード」を初期化（削除）しますか？\n（ユーザーは再度パスワードの設定が必要になります）')) {
+        localStorage.removeItem('tsuruUserPasswords');
+        alert('個人パスワードをすべて初期化しました。');
+      }
     }
 
     function closeAdminIdList() {
