@@ -38,6 +38,37 @@
       border-bottom: 3px solid #ff477e;
       letter-spacing: 1px;
     }
+
+    /* ログイン・アカウント登録エリア */
+    .auth-card {
+      display: block;
+    }
+    .app-card {
+      display: none;
+    }
+
+    .user-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f1f5f9;
+      padding: 8px 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid #cbd5e1;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .btn-logout {
+      background-color: #64748b;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
     .total-card {
       background: #0284c7;
       color: #ffffff;
@@ -59,7 +90,6 @@
       margin-top: 4px;
     }
 
-    /* 個人用鶴数表示カード */
     .user-card {
       background: #fef08a;
       color: #854d0e;
@@ -69,7 +99,6 @@
       margin-bottom: 20px;
       border: 2px solid #eab308;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-      display: none;
     }
     .user-title {
       font-size: 12px;
@@ -122,39 +151,6 @@
       border-color: #0077b6;
       box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.3);
     }
-    
-    .id-tag-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .id-tag {
-      background-color: #e0f2fe;
-      color: #0369a1;
-      border: 1px solid #0284c7;
-      padding: 4px 10px;
-      border-radius: 16px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    .id-tag:active {
-      background-color: #bae6fd;
-    }
-
-    .btn-pass-setting {
-      background-color: #e2e8f0;
-      color: #334155;
-      border: 1px solid #94a3b8;
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 6px;
-    }
 
     .btn-submit {
       width: 100%;
@@ -174,6 +170,22 @@
       background-color: #d90429;
       transform: scale(0.98);
     }
+
+    .btn-secondary {
+      background-color: #0284c7;
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+    }
+
+    .toggle-auth {
+      text-align: center;
+      margin-top: 16px;
+      font-size: 13px;
+      color: #0284c7;
+      cursor: pointer;
+      text-decoration: underline;
+      font-weight: bold;
+    }
+
     .history {
       margin-top: 24px;
       border-top: 3px solid #333333;
@@ -211,9 +223,6 @@
       font-size: 12px;
       font-weight: bold;
       cursor: pointer;
-    }
-    .delete-btn:active {
-      background: #dc2626;
     }
 
     /* モーダル表示エリア */
@@ -284,9 +293,7 @@
       color: #ffffff;
     }
     .btn-grant { background-color: #10b981; }
-    .btn-grant:active { background-color: #059669; }
     .btn-reset-single { background-color: #f59e0b; }
-    .btn-reset-single:active { background-color: #d97706; }
 
     .btn-reset-pass {
       width: 100%;
@@ -318,58 +325,82 @@
   <div class="container">
     <h1>鶴pay</h1>
 
-    <div class="admin-nav">
-      <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者メニュー</button>
+    <!-- ログイン・登録画面 -->
+    <div id="authCard" class="auth-card">
+      <h2 id="authTitle" style="font-size: 18px; text-align: center; margin-bottom: 16px;">ログイン</h2>
+      
+      <div class="form-group">
+        <label>ユーザーID / 名前</label>
+        <input type="text" id="loginId" placeholder="例：山田太郎">
+      </div>
+
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="loginPass" placeholder="パスワードを入力">
+      </div>
+
+      <button id="authBtn" class="btn-submit" onclick="handleAuth()">ログイン</button>
+      
+      <div id="toggleAuthText" class="toggle-auth" onclick="toggleAuthMode()">
+        新規アカウント作成はこちら
+      </div>
     </div>
 
-    <!-- 全体合計カード -->
-    <div class="total-card">
-      <div class="total-title">現在持っている鶴（全体合計）</div>
-      <div class="total-count"><span id="totalTsuru">0</span> 鶴</div>
+    <!-- アプリメイン画面 -->
+    <div id="appCard" class="app-card">
+      
+      <div class="user-bar">
+        <span>👤 ログイン中: <strong id="currentUserId">---</strong></span>
+        <button class="btn-logout" onclick="logout()">ログアウト</button>
+      </div>
+
+      <div class="admin-nav">
+        <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者メニュー</button>
+      </div>
+
+      <!-- 全体合計カード -->
+      <div class="total-card">
+        <div class="total-title">現在持っている鶴（全体合計）</div>
+        <div class="total-count"><span id="totalTsuru">0</span> 鶴</div>
+      </div>
+
+      <!-- ログインユーザーの鶴数表示カード -->
+      <div class="user-card">
+        <div class="user-title"><span id="targetUserName">---</span> さんの所有鶴数</div>
+        <div class="user-count"><span id="userTsuru">0</span> 鶴</div>
+      </div>
+
+      <div class="form-group">
+        <label>区分</label>
+        <select id="type">
+          <option value="受鶴">受鶴（増える）</option>
+          <option value="送鶴">送鶴（減る）</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>対象の相手ID（送鶴の場合のみ指定、空欄可）</label>
+        <input type="text" id="targetId" placeholder="例：鈴木花子（空欄でもOK）">
+      </div>
+
+      <div class="form-group">
+        <label>数量</label>
+        <input type="number" id="amount" placeholder="例：10" min="1">
+      </div>
+
+      <div class="form-group">
+        <label>詳細・備考</label>
+        <input type="text" id="detail" placeholder="例：お礼用">
+      </div>
+
+      <button class="btn-submit" onclick="addRecord()">送信（記録）</button>
+
+      <div class="history">
+        <h2>記録履歴</h2>
+        <ul id="historyList"></ul>
+      </div>
     </div>
 
-    <!-- 個人用鶴数表示カード（入力された名前の所有数） -->
-    <div class="user-card" id="userCard">
-      <div class="user-title"><span id="targetUserName">---</span> さんの所有鶴数</div>
-      <div class="user-count"><span id="userTsuru">0</span> 鶴</div>
-    </div>
-
-    <div class="form-group">
-      <label>区分</label>
-      <select id="type" onchange="togglePasswordLabel()">
-        <option value="受鶴">受鶴（増える）</option>
-        <option value="送鶴">送鶴（減る）</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label>自分のID・名前（または相手のID）</label>
-      <div class="id-tag-list" id="publicIdTags"></div>
-      <input type="text" id="name" placeholder="例：山田太郎" oninput="updateUserTsuruDisplay()">
-      <button type="button" class="btn-pass-setting" onclick="setUserPassword()">🔒 入力中IDの個人パスワードを設定・更新</button>
-    </div>
-
-    <div class="form-group">
-      <label>数量</label>
-      <input type="number" id="amount" placeholder="例：10" min="1">
-    </div>
-
-    <div class="form-group">
-      <label>詳細・備考</label>
-      <input type="text" id="detail" placeholder="例：お礼用">
-    </div>
-
-    <div class="form-group" id="passContainer" style="display: none;">
-      <label id="passLabel">送信者の個人パスワード</label>
-      <input type="password" id="userPassword" placeholder="パスワードを入力">
-    </div>
-
-    <button class="btn-submit" onclick="addRecord()">送信（記録）</button>
-
-    <div class="history">
-      <h2>記録履歴</h2>
-      <ul id="historyList"></ul>
-    </div>
   </div>
 
   <!-- 管理者用モーダル -->
@@ -384,20 +415,92 @@
 
   <script>
     const ADMIN_PASS = "1234";
+    let isRegisterMode = false;
+    let loggedInUser = null;
 
     window.onload = function() {
-      loadData();
-      togglePasswordLabel();
+      // セッション保持チェック
+      const savedUser = sessionStorage.getItem('tsuruLoggedInUser');
+      if (savedUser) {
+        loggedInUser = savedUser;
+        showApp();
+      }
     };
 
-    function togglePasswordLabel() {
-      const type = document.getElementById('type').value;
-      const passContainer = document.getElementById('passContainer');
-      if (type.includes("送鶴")) {
-        passContainer.style.display = "block";
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      const title = document.getElementById('authTitle');
+      const btn = document.getElementById('authBtn');
+      const toggleText = document.getElementById('toggleAuthText');
+
+      if (isRegisterMode) {
+        title.textContent = "新規アカウント登録";
+        btn.textContent = "登録する";
+        btn.classList.add('btn-secondary');
+        toggleText.textContent = "すでに登録済みの方（ログインへ）";
       } else {
-        passContainer.style.display = "none";
+        title.textContent = "ログイン";
+        btn.textContent = "ログイン";
+        btn.classList.remove('btn-secondary');
+        toggleText.textContent = "新規アカウント作成はこちら";
       }
+    }
+
+    function handleAuth() {
+      const id = document.getElementById('loginId').value.trim();
+      const pass = document.getElementById('loginPass').value.trim();
+
+      if (!id || !pass) {
+        alert('IDとパスワードの両方を入力してください');
+        return;
+      }
+
+      let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
+
+      if (isRegisterMode) {
+        // 新規登録
+        if (userPasswords[id]) {
+          alert('このIDは既に登録されています。ログインするか別のIDをお使いください。');
+          return;
+        }
+        userPasswords[id] = pass;
+        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
+        alert('アカウント登録が完了しました！ログインします。');
+        loggedInUser = id;
+        sessionStorage.setItem('tsuruLoggedInUser', id);
+        showApp();
+      } else {
+        // ログイン
+        if (!userPasswords[id]) {
+          alert('登録されていないIDです。まずは新規アカウント作成を行ってください。');
+          return;
+        }
+        if (userPasswords[id] !== pass) {
+          alert('パスワードが正しくありません');
+          return;
+        }
+        loggedInUser = id;
+        sessionStorage.setItem('tsuruLoggedInUser', id);
+        showApp();
+      }
+
+      document.getElementById('loginId').value = '';
+      document.getElementById('loginPass').value = '';
+    }
+
+    function showApp() {
+      document.getElementById('authCard').style.display = 'none';
+      document.getElementById('appCard').style.display = 'block';
+      document.getElementById('currentUserId').textContent = loggedInUser;
+      document.getElementById('targetUserName').textContent = loggedInUser;
+      loadData();
+    }
+
+    function logout() {
+      sessionStorage.removeItem('tsuruLoggedInUser');
+      loggedInUser = null;
+      document.getElementById('appCard').style.display = 'none';
+      document.getElementById('authCard').style.display = 'block';
     }
 
     function getUserBalance(name) {
@@ -417,65 +520,12 @@
       return count;
     }
 
-    function updateUserTsuruDisplay() {
-      const name = document.getElementById('name').value.trim();
-      const userCard = document.getElementById('userCard');
-      const targetUserName = document.getElementById('targetUserName');
-      const userTsuru = document.getElementById('userTsuru');
-
-      if (!name) {
-        userCard.style.display = "none";
-        return;
-      }
-
-      const count = getUserBalance(name);
-      targetUserName.textContent = name;
-      userTsuru.textContent = count;
-      userCard.style.display = "block";
-    }
-
-    function setUserPassword() {
-      const name = document.getElementById('name').value.trim();
-      if (!name) {
-        alert('まず名前・IDを入力してください');
-        return;
-      }
-
-      let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-      const currentPass = userPasswords[name];
-
-      let newPass = "";
-      if (currentPass) {
-        const verify = prompt(`【${name}】の現在のパスワードを入力してください:`);
-        if (verify !== currentPass) {
-          alert('パスワードが違います。変更できません。');
-          return;
-        }
-        newPass = prompt(`【${name}】の新しいパスワードを入力してください:`);
-      } else {
-        newPass = prompt(`【${name}】用に登録するパスワードを決めて入力してください:`);
-      }
-
-      if (newPass && newPass.trim() !== "") {
-        userPasswords[name] = newPass.trim();
-        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
-        alert(`【${name}】の個人パスワードを設定しました！`);
-      } else {
-        alert('パスワードが入力されなかったため設定をキャンセルしました');
-      }
-    }
-
     function addRecord() {
       const type = document.getElementById('type').value;
-      const name = document.getElementById('name').value.trim();
+      const targetId = document.getElementById('targetId').value.trim();
       const rawAmount = document.getElementById('amount').value;
       const amount = parseInt(rawAmount, 10);
       const detail = document.getElementById('detail').value;
-
-      if (!name) {
-        alert('名前・IDを入力してください');
-        return;
-      }
 
       if (isNaN(amount) || amount <= 0) {
         alert('数量を正しく数字で入力してください');
@@ -483,8 +533,7 @@
       }
 
       if (type.includes("送鶴")) {
-        // 残高チェック
-        const currentBalance = getUserBalance(name);
+        const currentBalance = getUserBalance(loggedInUser);
         if (currentBalance <= 0) {
           alert("あなたは鶴を持ってないペニュ🐧");
           return;
@@ -493,33 +542,19 @@
           alert(`所有している鶴数（${currentBalance}鶴）を超えて送信することはできません`);
           return;
         }
-
-        const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-        const registeredPass = userPasswords[name];
-        const inputPass = document.getElementById('userPassword').value;
-
-        if (!registeredPass) {
-          alert(`【${name}】の個人パスワードが未設定です。「個人パスワードを設定・更新」ボタンから登録してください。`);
-          return;
-        }
-
-        if (inputPass !== registeredPass) {
-          alert('個人パスワードが正しくありません');
-          return;
-        }
       }
 
       const date = new Date().toLocaleDateString('ja-JP');
-      const record = { id: Date.now(), date, type, name, amount, detail };
+      const detailText = targetId ? `相手:${targetId} ${detail}` : detail;
+      const record = { id: Date.now(), date, type, name: loggedInUser, amount, detail: detailText };
 
       let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
       records.unshift(record);
       localStorage.setItem('tsuruRecords', JSON.stringify(records));
 
-      document.getElementById('name').value = '';
       document.getElementById('amount').value = '';
       document.getElementById('detail').value = '';
-      document.getElementById('userPassword').value = '';
+      document.getElementById('targetId').value = '';
 
       alert('送信完了しました！');
       loadData();
@@ -544,15 +579,12 @@
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
       let total = 0;
-      const idSet = new Set();
 
       if (records.length === 0) {
         list.innerHTML = '<li style="border: 2px dashed #999999; background:#ffffff; color:#666666;">履歴はありません</li>';
       } else {
         records.forEach(r => {
           const amt = parseInt(r.amount, 10) || 0;
-
-          if (r.name) idSet.add(r.name);
 
           if (r.type.includes("受鶴")) {
             total += amt;
@@ -573,26 +605,11 @@
       }
 
       document.getElementById('totalTsuru').textContent = isNaN(total) ? 0 : total;
-      renderPublicIdTags(Array.from(idSet));
-      updateUserTsuruDisplay();
-    }
-
-    function renderPublicIdTags(idArray) {
-      const tagContainer = document.getElementById('publicIdTags');
-      tagContainer.innerHTML = '';
-
-      if (idArray.length > 0) {
-        idArray.forEach(idName => {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'id-tag';
-          btn.textContent = idName;
-          btn.onclick = function() {
-            document.getElementById('name').value = idName;
-            updateUserTsuruDisplay();
-          };
-          tagContainer.appendChild(btn);
-        });
+      
+      // ログイン中ユーザーの残高更新
+      if (loggedInUser) {
+        const userBal = getUserBalance(loggedInUser);
+        document.getElementById('userTsuru').textContent = userBal;
       }
     }
 
@@ -613,7 +630,6 @@
       const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
       const idTotals = {};
 
-      // レコードが存在するIDを集計
       records.forEach(r => {
         if (!r.name) return;
         const amt = parseInt(r.amount, 10) || 0;
@@ -626,7 +642,6 @@
         }
       });
 
-      // パスワードだけ登録されて記録がまだないIDもリストアップ
       Object.keys(userPasswords).forEach(idName => {
         if (idTotals[idName] === undefined) {
           idTotals[idName] = 0;
@@ -660,7 +675,6 @@
       }
     }
 
-    /* 管理者権限：特定のIDに鶴を付与 */
     function adminGrantTsuru(idName) {
       const input = prompt(`【${idName}】に付与する鶴の数を入力してください:`, "10");
       if (input === null) return;
@@ -690,7 +704,6 @@
       renderAdminModalList();
     }
 
-    /* 管理者権限：特定IDのパスワード個別初期化 */
     function adminResetSinglePassword(idName) {
       let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
       if (!userPasswords[idName]) {
@@ -698,19 +711,18 @@
         return;
       }
 
-      if (confirm(`【${idName}】の個人パスワードを初期化（削除）しますか？`)) {
+      if (confirm(`【${idName}】のアカウント・パスワードを初期化（削除）しますか？`)) {
         delete userPasswords[idName];
         localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
-        alert(`【${idName}】の個人パスワードを初期化しました。`);
+        alert(`【${idName}】のアカウントを初期化しました。`);
         renderAdminModalList();
       }
     }
 
-    /* 管理者権限：パスワード一括初期化 */
     function resetAllUserPasswords() {
-      if (confirm('登録されているすべての「個人パスワード」を初期化（削除）しますか？\n（ユーザーは再度パスワードの設定が必要になります）')) {
+      if (confirm('登録されているすべての「ID・パスワード」を初期化（削除）しますか？')) {
         localStorage.removeItem('tsuruUserPasswords');
-        alert('個人パスワードをすべて初期化しました。');
+        alert('全アカウントを初期化しました。');
         renderAdminModalList();
       }
     }
