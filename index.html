@@ -234,7 +234,7 @@
       padding: 20px;
       border-radius: 12px;
       width: 90%;
-      max-width: 350px;
+      max-width: 360px;
       border: 3px solid #333333;
       box-shadow: 0 10px 25px rgba(0,0,0,0.2);
     }
@@ -246,7 +246,7 @@
       padding-bottom: 8px;
     }
     .id-list {
-      max-height: 200px;
+      max-height: 240px;
       overflow-y: auto;
       margin: 12px 0;
       padding: 0;
@@ -255,13 +255,39 @@
       background: #f1f5f9;
       border: 1px solid #cbd5e1;
       border-left: 4px solid #0284c7;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       padding: 10px 12px;
       font-weight: bold;
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
     }
+    .id-info-row {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+    }
+    .id-action-row {
+      display: flex;
+      gap: 6px;
+      width: 100%;
+    }
+    .btn-admin-action {
+      flex: 1;
+      padding: 6px 8px;
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #ffffff;
+    }
+    .btn-grant { background-color: #10b981; }
+    .btn-grant:active { background-color: #059669; }
+    .btn-reset-single { background-color: #f59e0b; }
+    .btn-reset-single:active { background-color: #d97706; }
+
     .btn-reset-pass {
       width: 100%;
       padding: 10px;
@@ -293,7 +319,7 @@
     <h1>鶴pay</h1>
 
     <div class="admin-nav">
-      <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者用 ID別鶴数一覧</button>
+      <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者メニュー</button>
     </div>
 
     <!-- 全体合計カード -->
@@ -349,9 +375,9 @@
   <!-- 管理者用モーダル -->
   <div class="modal-overlay" id="idModal">
     <div class="modal-content">
-      <h3>ID毎の所有鶴数一覧</h3>
+      <h3>管理者メニュー（ID管理）</h3>
       <ul class="id-list" id="idListContainer"></ul>
-      <button class="btn-reset-pass" onclick="resetAllUserPasswords()">🚨 一般用パスワードをすべて初期化</button>
+      <button class="btn-reset-pass" onclick="resetAllUserPasswords()">🚨 全ユーザーのパスワードを一括初期化</button>
       <button class="btn-close" onclick="closeAdminIdList()">閉じる</button>
     </div>
   </div>
@@ -570,6 +596,7 @@
       }
     }
 
+    /* 管理者用ID一覧表示・個別アクション */
     function openAdminIdList() {
       const pass = prompt('管理者パスワードを入力してください:');
       if (pass !== ADMIN_PASS) {
@@ -577,21 +604,32 @@
         return;
       }
 
+      renderAdminModalList();
+      document.getElementById('idModal').style.display = 'flex';
+    }
+
+    function renderAdminModalList() {
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+      const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
       const idTotals = {};
 
+      // レコードが存在するIDを集計
       records.forEach(r => {
         if (!r.name) return;
         const amt = parseInt(r.amount, 10) || 0;
-
-        if (!idTotals[r.name]) {
-          idTotals[r.name] = 0;
-        }
+        if (!idTotals[r.name]) idTotals[r.name] = 0;
 
         if (r.type.includes("受鶴")) {
           idTotals[r.name] += amt;
         } else {
           idTotals[r.name] -= amt;
+        }
+      });
+
+      // パスワードだけ登録されて記録がまだないIDもリストアップ
+      Object.keys(userPasswords).forEach(idName => {
+        if (idTotals[idName] === undefined) {
+          idTotals[idName] = 0;
         }
       });
 
@@ -604,19 +642,76 @@
       } else {
         keys.forEach(idName => {
           const count = idTotals[idName];
+          const hasPass = !!userPasswords[idName];
           const li = document.createElement('li');
-          li.innerHTML = `<span>${idName}</span> <span style="color:#0284c7;">${count} 鶴</span>`;
+          
+          li.innerHTML = `
+            <div class="id-info-row">
+              <span>${idName} ${hasPass ? '🔒' : ''}</span>
+              <span style="color:#0284c7;">${count} 鶴</span>
+            </div>
+            <div class="id-action-row">
+              <button class="btn-admin-action btn-grant" onclick="adminGrantTsuru('${idName}')">🎁 鶴を付与</button>
+              <button class="btn-admin-action btn-reset-single" onclick="adminResetSinglePassword('${idName}')">🔑 パス初期化</button>
+            </div>
+          `;
           container.appendChild(li);
         });
       }
-
-      document.getElementById('idModal').style.display = 'flex';
     }
 
+    /* 管理者権限：特定のIDに鶴を付与 */
+    function adminGrantTsuru(idName) {
+      const input = prompt(`【${idName}】に付与する鶴の数を入力してください:`, "10");
+      if (input === null) return;
+
+      const amount = parseInt(input, 10);
+      if (isNaN(amount) || amount <= 0) {
+        alert('正しい正の数値を入力してください');
+        return;
+      }
+
+      const date = new Date().toLocaleDateString('ja-JP');
+      const record = {
+        id: Date.now(),
+        date,
+        type: "受鶴",
+        name: idName,
+        amount: amount,
+        detail: "管理者より特別付与"
+      };
+
+      let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
+      records.unshift(record);
+      localStorage.setItem('tsuruRecords', JSON.stringify(records));
+
+      alert(`【${idName}】に ${amount} 鶴を付与しました！`);
+      loadData();
+      renderAdminModalList();
+    }
+
+    /* 管理者権限：特定IDのパスワード個別初期化 */
+    function adminResetSinglePassword(idName) {
+      let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
+      if (!userPasswords[idName]) {
+        alert(`【${idName}】のパスワードは設定されていません。`);
+        return;
+      }
+
+      if (confirm(`【${idName}】の個人パスワードを初期化（削除）しますか？`)) {
+        delete userPasswords[idName];
+        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
+        alert(`【${idName}】の個人パスワードを初期化しました。`);
+        renderAdminModalList();
+      }
+    }
+
+    /* 管理者権限：パスワード一括初期化 */
     function resetAllUserPasswords() {
       if (confirm('登録されているすべての「個人パスワード」を初期化（削除）しますか？\n（ユーザーは再度パスワードの設定が必要になります）')) {
         localStorage.removeItem('tsuruUserPasswords');
         alert('個人パスワードをすべて初期化しました。');
+        renderAdminModalList();
       }
     }
 
