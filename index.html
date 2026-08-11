@@ -39,7 +39,6 @@
       letter-spacing: 1px;
     }
 
-    /* ログイン・アカウント登録エリア */
     .auth-card {
       display: block;
     }
@@ -69,45 +68,24 @@
       cursor: pointer;
     }
 
-    .total-card {
-      background: #0284c7;
-      color: #ffffff;
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-      margin-bottom: 12px;
-      border: 2px solid #333333;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
-    .total-title {
-      font-size: 13px;
-      font-weight: bold;
-      letter-spacing: 1px;
-    }
-    .total-count {
-      font-size: 32px;
-      font-weight: bold;
-      margin-top: 4px;
-    }
-
     .user-card {
       background: #fef08a;
       color: #854d0e;
       border-radius: 12px;
-      padding: 12px;
+      padding: 16px;
       text-align: center;
       margin-bottom: 20px;
       border: 2px solid #eab308;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     }
     .user-title {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: bold;
     }
     .user-count {
-      font-size: 26px;
+      font-size: 36px;
       font-weight: bold;
-      margin-top: 2px;
+      margin-top: 4px;
       color: #713f12;
     }
 
@@ -293,7 +271,7 @@
       color: #ffffff;
     }
     .btn-grant { background-color: #10b981; }
-    .btn-reset-single { background-color: #f59e0b; }
+    .btn-delete-id { background-color: #ef4444; }
 
     .btn-reset-pass {
       width: 100%;
@@ -358,13 +336,7 @@
         <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者メニュー</button>
       </div>
 
-      <!-- 全体合計カード -->
-      <div class="total-card">
-        <div class="total-title">現在持っている鶴（全体合計）</div>
-        <div class="total-count"><span id="totalTsuru">0</span> 鶴</div>
-      </div>
-
-      <!-- ログインユーザーの鶴数表示カード -->
+      <!-- ログインユーザー自身の鶴数表示カード -->
       <div class="user-card">
         <div class="user-title"><span id="targetUserName">---</span> さんの所有鶴数</div>
         <div class="user-count"><span id="userTsuru">0</span> 鶴</div>
@@ -396,7 +368,7 @@
       <button class="btn-submit" onclick="addRecord()">送信（記録）</button>
 
       <div class="history">
-        <h2>記録履歴</h2>
+        <h2>自分の記録履歴</h2>
         <ul id="historyList"></ul>
       </div>
     </div>
@@ -408,7 +380,7 @@
     <div class="modal-content">
       <h3>管理者メニュー（ID管理）</h3>
       <ul class="id-list" id="idListContainer"></ul>
-      <button class="btn-reset-pass" onclick="resetAllUserPasswords()">🚨 全ユーザーのパスワードを一括初期化</button>
+      <button class="btn-reset-pass" onclick="resetAllUserPasswords()">🚨 全ユーザーのパスワード・IDを一括初期化</button>
       <button class="btn-close" onclick="closeAdminIdList()">閉じる</button>
     </div>
   </div>
@@ -419,7 +391,6 @@
     let loggedInUser = null;
 
     window.onload = function() {
-      // セッション保持チェック
       const savedUser = sessionStorage.getItem('tsuruLoggedInUser');
       if (savedUser) {
         loggedInUser = savedUser;
@@ -458,7 +429,6 @@
       let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
 
       if (isRegisterMode) {
-        // 新規登録
         if (userPasswords[id]) {
           alert('このIDは既に登録されています。ログインするか別のIDをお使いください。');
           return;
@@ -470,7 +440,6 @@
         sessionStorage.setItem('tsuruLoggedInUser', id);
         showApp();
       } else {
-        // ログイン
         if (!userPasswords[id]) {
           alert('登録されていないIDです。まずは新規アカウント作成を行ってください。');
           return;
@@ -578,25 +547,19 @@
       list.innerHTML = '';
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
-      let total = 0;
+      // 自分のレコードのみフィルタリング
+      const myRecords = records.filter(r => r.name === loggedInUser);
 
-      if (records.length === 0) {
+      if (myRecords.length === 0) {
         list.innerHTML = '<li style="border: 2px dashed #999999; background:#ffffff; color:#666666;">履歴はありません</li>';
       } else {
-        records.forEach(r => {
+        myRecords.forEach(r => {
           const amt = parseInt(r.amount, 10) || 0;
-
-          if (r.type.includes("受鶴")) {
-            total += amt;
-          } else {
-            total -= amt;
-          }
-
           const li = document.createElement('li');
           li.innerHTML = `
             <div>
               <strong>${r.date} 【${r.type}】 ${amt} 鶴</strong><br>
-              ${r.name} ${r.detail ? '(' + r.detail + ')' : ''}
+              ${r.detail ? '(' + r.detail + ')' : ''}
             </div>
             <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
           `;
@@ -604,16 +567,13 @@
         });
       }
 
-      document.getElementById('totalTsuru').textContent = isNaN(total) ? 0 : total;
-      
-      // ログイン中ユーザーの残高更新
       if (loggedInUser) {
         const userBal = getUserBalance(loggedInUser);
         document.getElementById('userTsuru').textContent = userBal;
       }
     }
 
-    /* 管理者用ID一覧表示・個別アクション */
+    /* 管理者機能 */
     function openAdminIdList() {
       const pass = prompt('管理者パスワードを入力してください:');
       if (pass !== ADMIN_PASS) {
@@ -667,7 +627,7 @@
             </div>
             <div class="id-action-row">
               <button class="btn-admin-action btn-grant" onclick="adminGrantTsuru('${idName}')">🎁 鶴を付与</button>
-              <button class="btn-admin-action btn-reset-single" onclick="adminResetSinglePassword('${idName}')">🔑 パス初期化</button>
+              <button class="btn-admin-action btn-delete-id" onclick="adminDeleteId('${idName}')">🗑️ ID削除</button>
             </div>
           `;
           container.appendChild(li);
@@ -704,18 +664,21 @@
       renderAdminModalList();
     }
 
-    function adminResetSinglePassword(idName) {
-      let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-      if (!userPasswords[idName]) {
-        alert(`【${idName}】のパスワードは設定されていません。`);
-        return;
-      }
-
-      if (confirm(`【${idName}】のアカウント・パスワードを初期化（削除）しますか？`)) {
+    /* 管理者権限：指定IDの完全削除機能 */
+    function adminDeleteId(idName) {
+      if (confirm(`本当にID【${idName}】を完全に削除しますか？\n（ログインできなくなります）`)) {
+        let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
         delete userPasswords[idName];
         localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
-        alert(`【${idName}】のアカウントを初期化しました。`);
+
+        alert(`ID【${idName}】を削除しました。`);
         renderAdminModalList();
+        
+        // もし現在ログイン中のIDを削除した場合はログアウト処理を行う
+        if (loggedInUser === idName) {
+          logout();
+          closeAdminIdList();
+        }
       }
     }
 
@@ -724,6 +687,8 @@
         localStorage.removeItem('tsuruUserPasswords');
         alert('全アカウントを初期化しました。');
         renderAdminModalList();
+        logout();
+        closeAdminIdList();
       }
     }
 
