@@ -274,20 +274,22 @@
     }
     .id-action-row {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       width: 100%;
     }
     .btn-admin-action {
       flex: 1;
-      padding: 6px 8px;
+      padding: 6px 4px;
       border: none;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: bold;
       cursor: pointer;
       color: #ffffff;
+      text-align: center;
     }
     .btn-grant { background-color: #10b981; }
+    .btn-reset-single-pass { background-color: #f59e0b; }
     .btn-delete-id { background-color: #ef4444; }
 
     .btn-reset-pass {
@@ -403,7 +405,7 @@
   </div>
 
   <script>
-    const ADMIN_PASS = "1234";
+    const ADMIN_PASS = "213358";
     let isRegisterMode = false;
     let loggedInUser = null;
 
@@ -622,6 +624,7 @@
       list.innerHTML = '';
       const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
 
+      // ログイン中のユーザーIDに一致する全履歴（前回以前を含む）を抽出
       const myRecords = records.filter(r => r.name === loggedInUser);
 
       if (myRecords.length === 0) {
@@ -688,7 +691,8 @@
               <span style="color:#0284c7;">${count} 鶴</span>
             </div>
             <div class="id-action-row">
-              <button class="btn-admin-action btn-grant" onclick="adminGrantTsuru('${idName}')">🎁 鶴を付与</button>
+              <button class="btn-admin-action btn-grant" onclick="adminGrantTsuru('${idName}')">🎁 鶴付与</button>
+              <button class="btn-admin-action btn-reset-single-pass" onclick="adminResetSinglePassword('${idName}')">🔑 パス初期化</button>
               <button class="btn-admin-action btn-delete-id" onclick="adminDeleteId('${idName}')">🗑️ ID削除</button>
             </div>
           `;
@@ -724,6 +728,15 @@
       alert(`【${idName}】に ${amount} 鶴を付与しました！`);
       loadData();
       renderAdminModalList();
+    }
+
+    function adminResetSinglePassword(idName) {
+      if (confirm(`【${idName}】のパスワードを初期化しますか？\n（初期化後のパスワードは「0000」になります）`)) {
+        let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
+        userPasswords[idName] = "0000";
+        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
+        alert(`【${idName}】のパスワードを「0000」にリセットしました。`);
+      }
     }
 
     function adminDeleteId(idName) {
