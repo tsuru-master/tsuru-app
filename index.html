@@ -1,785 +1,535 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>鶴pay</title>
-  <link rel="apple-touch-icon" href="https://tsuru-master.github.io/tsuru-app/icon.png">
-  <link rel="icon" href="https://tsuru-master.github.io/tsuru-app/icon.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ff477e">
+  <title>鶴Pay</title>
+  <link rel="apple-touch-icon" href="./icon.png">
+  <link rel="icon" href="./icon.png">
   <style>
+    :root {
+      --pink: #ff477e;
+      --pink-dark: #db2763;
+      --blue: #0284c7;
+      --ink: #1f2937;
+      --muted: #64748b;
+      --line: #dbe4ee;
+      --paper: #fff;
+      --yellow: #fef08a;
+      --green: #10b981;
+      --red: #ef4444;
+    }
+    * { box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(135deg, #70d6ff 0%, #ff70a6 100%);
       margin: 0;
-      padding: 16px;
       min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      box-sizing: border-box;
+      padding: max(16px, env(safe-area-inset-top)) 16px max(24px, env(safe-area-inset-bottom));
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: linear-gradient(135deg, #70d6ff 0%, #ff70a6 100%);
     }
-    .container {
-      background: #ffffff;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-      width: 100%;
-      max-width: 400px;
-      border: 3px solid #333333;
-      position: relative;
+    button, input, select { font: inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
+    .shell {
+      width: min(100%, 440px);
+      margin: 0 auto;
+      background: var(--paper);
+      border: 3px solid #263238;
+      border-radius: 22px;
+      box-shadow: 0 14px 40px rgba(15, 23, 42, .22);
+      overflow: hidden;
     }
-    h1 {
-      font-size: 24px;
-      color: #222222;
-      text-align: center;
-      margin-top: 0;
-      margin-bottom: 16px;
-      padding-bottom: 10px;
-      border-bottom: 3px solid #ff477e;
-      letter-spacing: 1px;
-    }
-
-    .auth-card {
-      display: block;
-    }
-    .app-card {
-      display: none;
-    }
-
-    .user-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #f1f5f9;
-      padding: 8px 12px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      border: 1px solid #cbd5e1;
+    header { padding: 20px 20px 12px; text-align: center; }
+    h1 { margin: 0; font-size: 28px; letter-spacing: .04em; }
+    h1 span { color: var(--pink); }
+    .tagline { margin: 4px 0 0; color: var(--muted); font-size: 12px; font-weight: 700; }
+    main { padding: 0 18px 22px; }
+    .hidden { display: none !important; }
+    .notice {
+      padding: 12px;
+      margin: 0 0 14px;
+      border: 1px solid #fdba74;
+      border-radius: 10px;
+      background: #fff7ed;
+      color: #9a3412;
       font-size: 13px;
-      font-weight: bold;
+      line-height: 1.5;
     }
-    .btn-logout {
-      background-color: #64748b;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 4px 8px;
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    .user-card {
-      background: #fef08a;
-      color: #854d0e;
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-      margin-bottom: 20px;
-      border: 2px solid #eab308;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-    .user-title {
-      font-size: 13px;
-      font-weight: bold;
-    }
-    .user-count {
-      font-size: 36px;
-      font-weight: bold;
-      margin-top: 4px;
-      color: #713f12;
-    }
-
-    .admin-nav {
-      text-align: right;
-      margin-bottom: 16px;
-    }
-    .btn-admin-view {
-      background-color: #333333;
-      color: #ffffff;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .form-group {
-      margin-bottom: 16px;
-    }
-    label {
-      display: block;
-      font-size: 14px;
-      color: #333333;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
+    .field { margin: 0 0 14px; }
+    label { display: block; margin: 0 0 6px; font-size: 14px; font-weight: 800; }
     input, select {
       width: 100%;
-      padding: 12px;
-      border: 2px solid #555555;
-      border-radius: 8px;
-      box-sizing: border-box;
-      font-size: 15px;
-      background-color: #ffffff;
-      color: #111111;
-      font-weight: 500;
-    }
-    input:focus, select:focus {
-      outline: none;
-      border-color: #0077b6;
-      box-shadow: 0 0 0 3px rgba(0, 119, 182, 0.3);
-    }
-
-    .btn-submit {
-      width: 100%;
-      padding: 14px;
-      background-color: #ff2a70;
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      font-size: 17px;
-      font-weight: bold;
-      cursor: pointer;
-      margin-top: 10px;
-      box-shadow: 0 4px 12px rgba(255, 42, 112, 0.4);
-      transition: background-color 0.2s, transform 0.1s;
-    }
-    .btn-submit:active {
-      background-color: #d90429;
-      transform: scale(0.98);
-    }
-
-    .btn-secondary {
-      background-color: #0284c7;
-      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
-    }
-
-    .toggle-auth {
-      text-align: center;
-      margin-top: 16px;
-      font-size: 13px;
-      color: #0284c7;
-      cursor: pointer;
-      text-decoration: underline;
-      font-weight: bold;
-    }
-
-    .history {
-      margin-top: 24px;
-      border-top: 3px solid #333333;
-      padding-top: 16px;
-    }
-    .history h2 {
-      font-size: 16px;
-      color: #222222;
-      margin-bottom: 12px;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    li {
-      background: #e0f2fe;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      font-size: 14px;
-      color: #111111;
-      border: 2px solid #0284c7;
-      border-left: 6px solid #ff2a70;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .delete-btn {
-      background: #4b5563;
-      color: #ffffff;
-      border: none;
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    /* モーダル表示エリア */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.6);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 380px;
-      border: 3px solid #333333;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-    .modal-content h3 {
-      margin-top: 0;
-      font-size: 18px;
-      color: #222222;
-      border-bottom: 2px solid #0284c7;
-      padding-bottom: 8px;
-    }
-    .id-list {
-      max-height: 280px;
-      overflow-y: auto;
-      margin: 12px 0;
-      padding: 0;
-    }
-    .id-list li {
-      background: #f1f5f9;
-      border: 1px solid #cbd5e1;
-      border-left: 4px solid #0284c7;
-      margin-bottom: 8px;
-      padding: 10px 12px;
-      font-weight: bold;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 6px;
-    }
-    .id-info-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 100%;
-    }
-    .status-badge {
-      font-size: 10px;
-      padding: 2px 6px;
+      min-height: 48px;
+      padding: 11px 12px;
+      border: 2px solid #64748b;
       border-radius: 10px;
-      margin-left: 4px;
+      background: #fff;
+      color: #111827;
     }
-    .status-online {
-      background-color: #d1fae5;
-      color: #047857;
-      border: 1px solid #10b981;
-    }
-    .status-offline {
-      background-color: #f3f4f6;
-      color: #6b7280;
-      border: 1px solid #d1d5db;
-    }
-    .id-action-row {
-      display: flex;
-      gap: 4px;
+    input:focus, select:focus { outline: 3px solid rgba(2,132,199,.2); border-color: var(--blue); }
+    .btn {
       width: 100%;
-    }
-    .btn-admin-action {
-      flex: 1;
-      padding: 6px 4px;
-      border: none;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: bold;
+      min-height: 50px;
+      border: 0;
+      border-radius: 11px;
+      padding: 12px 14px;
+      color: #fff;
+      background: var(--pink);
+      font-weight: 900;
       cursor: pointer;
-      color: #ffffff;
+      box-shadow: 0 5px 12px rgba(255,71,126,.28);
+    }
+    .btn:active { transform: scale(.985); }
+    .btn:disabled { cursor: wait; opacity: .55; }
+    .btn.blue { background: var(--blue); box-shadow: none; }
+    .btn.green { background: var(--green); box-shadow: none; }
+    .btn.gray { background: #64748b; box-shadow: none; }
+    .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+    .who { min-width: 0; font-size: 13px; font-weight: 800; }
+    .who strong { display: block; overflow: hidden; text-overflow: ellipsis; }
+    .logout { width: auto; min-height: 36px; padding: 7px 10px; font-size: 12px; }
+    .balance {
+      margin-bottom: 14px;
+      padding: 17px;
       text-align: center;
+      border: 2px solid #eab308;
+      border-radius: 16px;
+      background: var(--yellow);
+      color: #713f12;
     }
-    .btn-grant { background-color: #10b981; }
-    .btn-reset-single-pass { background-color: #f59e0b; }
-    .btn-delete-id { background-color: #ef4444; }
-
-    .btn-reset-pass {
-      width: 100%;
-      padding: 10px;
-      background-color: #dc2626;
-      color: #ffffff;
-      border: none;
-      border-radius: 6px;
+    .balance .name { font-size: 13px; font-weight: 900; }
+    .balance .number { margin-top: 2px; font-size: 40px; font-weight: 950; line-height: 1.15; }
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-bottom: 16px; }
+    .tab {
+      min-height: 43px;
+      border: 2px solid var(--line);
+      border-radius: 10px;
+      background: #f8fafc;
+      color: #475569;
       font-size: 13px;
-      font-weight: bold;
+      font-weight: 900;
       cursor: pointer;
-      margin-bottom: 8px;
     }
-    .btn-close {
-      width: 100%;
-      padding: 10px;
-      background-color: #4b5563;
-      color: white;
-      border: none;
-      border-radius: 6px;
+    .tab.active { border-color: var(--pink); background: #fff1f5; color: var(--pink-dark); }
+    .section-title { margin: 0 0 10px; font-size: 16px; }
+    .member-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin-bottom: 15px; }
+    .member {
+      min-height: 74px;
+      padding: 9px 6px;
+      border: 2px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+      color: var(--ink);
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .member .emoji { display: block; margin-bottom: 2px; font-size: 27px; }
+    .member.selected { border-color: var(--pink); background: #fff1f5; color: var(--pink-dark); box-shadow: 0 0 0 2px rgba(255,71,126,.14); }
+    .quick-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: -4px 0 14px; }
+    .quick-amounts button { min-height: 38px; border: 1px solid #93c5fd; border-radius: 9px; background: #eff6ff; color: #075985; font-weight: 900; cursor: pointer; }
+    .card { padding: 14px; border: 2px solid var(--line); border-radius: 14px; background: #f8fafc; margin-bottom: 12px; }
+    .reward-grid { display: grid; gap: 10px; }
+    .reward { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+    .reward-name { font-weight: 900; }
+    .reward-cost { color: #854d0e; font-size: 13px; font-weight: 900; }
+    .reward button { width: auto; min-height: 40px; padding: 8px 12px; }
+    .history-list { display: grid; gap: 9px; }
+    .history-item { padding: 11px; border: 1px solid #bae6fd; border-left: 5px solid var(--blue); border-radius: 10px; background: #f0f9ff; }
+    .history-item.out { border-left-color: var(--pink); background: #fff1f5; }
+    .history-item.rewarded { border-left-color: #f59e0b; background: #fffbeb; }
+    .history-main { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; font-weight: 900; }
+    .history-sub { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .empty { padding: 18px; border: 2px dashed #cbd5e1; border-radius: 12px; color: var(--muted); text-align: center; font-size: 13px; }
+    .admin { margin-top: 18px; padding-top: 15px; border-top: 3px solid #334155; }
+    .admin h2 { margin: 0 0 12px; font-size: 16px; }
+    .admin-grid { display: grid; grid-template-columns: 1fr 100px; gap: 8px; }
+    .status { min-height: 22px; margin-top: 11px; color: var(--muted); font-size: 12px; text-align: center; }
+    .status.error { color: #b91c1c; font-weight: 800; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: max(24px, env(safe-area-inset-bottom));
+      z-index: 10;
+      width: min(calc(100% - 32px), 400px);
+      padding: 12px 14px;
+      transform: translate(-50%, 20px);
+      border-radius: 12px;
+      background: #111827;
+      color: #fff;
+      text-align: center;
       font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
+      font-weight: 800;
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
     }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
   </style>
 </head>
 <body>
+  <div class="shell">
+    <header>
+      <h1>🕊️ 鶴<span>Pay</span></h1>
+      <p class="tagline">家族の「ありがとう」と「がんばった」を貯めよう</p>
+    </header>
+    <main>
+      <section id="setupView" class="hidden">
+        <div class="notice"><strong>Firebaseの設定がまだです。</strong><br>このファイル内の <code>firebaseConfig</code> を、あなたのFirebase設定に置き換えてください。</div>
+      </section>
 
-  <div class="container">
-    <h1>鶴pay</h1>
+      <section id="loginView">
+        <div class="field">
+          <label for="email">ログイン用メールアドレス</label>
+          <input id="email" type="email" autocomplete="username" placeholder="例：papa@example.com">
+        </div>
+        <div class="field">
+          <label for="password">パスワード</label>
+          <input id="password" type="password" autocomplete="current-password" placeholder="パスワードを入力">
+        </div>
+        <button id="loginBtn" class="btn">ログイン</button>
+        <div id="loginStatus" class="status"></div>
+      </section>
 
-    <!-- ログイン・登録画面 -->
-    <div id="authCard" class="auth-card">
-      <h2 id="authTitle" style="font-size: 18px; text-align: center; margin-bottom: 16px;">ログイン</h2>
-      
-      <div class="form-group">
-        <label>ユーザーID / 名前</label>
-        <input type="text" id="loginId" placeholder="例：山田太郎">
-      </div>
+      <section id="appView" class="hidden">
+        <div class="topbar">
+          <div class="who">ログイン中<strong id="currentName">---</strong></div>
+          <button id="logoutBtn" class="btn gray logout">ログアウト</button>
+        </div>
+        <div class="balance">
+          <div class="name"><span id="balanceName">---</span> さんの所有鶴数</div>
+          <div class="number"><span id="balance">0</span> 鶴</div>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-tab="send">🕊️ あげる</button>
+          <button class="tab" data-tab="rewards">🎁 ごほうび</button>
+          <button class="tab" data-tab="history">📜 履歴</button>
+        </div>
 
-      <div class="form-group">
-        <label>パスワード</label>
-        <input type="password" id="loginPass" placeholder="パスワードを入力">
-      </div>
+        <section id="sendPanel" class="panel">
+          <h2 class="section-title">だれにあげる？</h2>
+          <div id="memberGrid" class="member-grid"></div>
+          <div class="field">
+            <label for="amount">何鶴あげる？</label>
+            <input id="amount" type="number" min="1" inputmode="numeric" placeholder="例：10">
+          </div>
+          <div class="quick-amounts">
+            <button data-amount="5">5鶴</button><button data-amount="10">10鶴</button><button data-amount="20">20鶴</button><button data-amount="50">50鶴</button>
+          </div>
+          <div class="field">
+            <label for="detail">理由・メッセージ</label>
+            <input id="detail" maxlength="80" placeholder="例：お手伝いありがとう">
+          </div>
+          <button id="sendBtn" class="btn">鶴を送る</button>
+        </section>
 
-      <button id="authBtn" class="btn-submit" onclick="handleAuth()">ログイン</button>
-      
-      <div id="toggleAuthText" class="toggle-auth" onclick="toggleAuthMode()">
-        新規アカウント作成はこちら
-      </div>
-    </div>
+        <section id="rewardsPanel" class="panel hidden">
+          <h2 class="section-title">鶴をごほうびに交換</h2>
+          <div id="rewardGrid" class="reward-grid"></div>
+        </section>
 
-    <!-- アプリメイン画面 -->
-    <div id="appCard" class="app-card">
-      
-      <div class="user-bar">
-        <span>👤 ログイン中: <strong id="currentUserId">---</strong></span>
-        <button class="btn-logout" onclick="logout()">ログアウト</button>
-      </div>
+        <section id="historyPanel" class="panel hidden">
+          <h2 class="section-title">家族の記録履歴</h2>
+          <div id="historyList" class="history-list"></div>
+        </section>
 
-      <div class="admin-nav">
-        <button class="btn-admin-view" onclick="openAdminIdList()">🔑 管理者メニュー</button>
-      </div>
-
-      <!-- ログインユーザー自身の鶴数表示カード -->
-      <div class="user-card">
-        <div class="user-title"><span id="targetUserName">---</span> さんの所有鶴数</div>
-        <div class="user-count"><span id="userTsuru">0</span> 鶴</div>
-      </div>
-
-      <div class="form-group">
-        <label>なにをする？</label>
-        <select id="type" onchange="toggleTargetInput()">
-          <option value="あげる">あげる（減る）</option>
-          <option value="もらう">もらう（増える）</option>
-        </select>
-      </div>
-
-      <div class="form-group" id="targetIdGroup">
-        <label>だれにあげる？（相手のID）</label>
-        <input type="text" id="targetId" placeholder="例：鈴木花子">
-      </div>
-
-      <div class="form-group">
-        <label>数量</label>
-        <input type="number" id="amount" placeholder="例：10" min="1">
-      </div>
-
-      <div class="form-group">
-        <label>詳細・備考</label>
-        <input type="text" id="detail" placeholder="例：お礼用">
-      </div>
-
-      <button class="btn-submit" onclick="addRecord()">送信（記録）</button>
-
-      <div class="history">
-        <h2>自分の記録履歴</h2>
-        <ul id="historyList"></ul>
-      </div>
-    </div>
-
+        <section id="adminPanel" class="admin hidden">
+          <h2>👩 ママ管理者メニュー</h2>
+          <div class="field">
+            <label for="adminTarget">付与する家族</label>
+            <select id="adminTarget"></select>
+          </div>
+          <div class="admin-grid">
+            <input id="adminAmount" type="number" min="1" inputmode="numeric" placeholder="鶴数">
+            <button id="grantBtn" class="btn green">付与</button>
+          </div>
+        </section>
+      </section>
+    </main>
   </div>
+  <div id="toast" class="toast"></div>
 
-  <!-- 管理者用モーダル -->
-  <div class="modal-overlay" id="idModal">
-    <div class="modal-content">
-      <h3>管理者メニュー（ID一覧・オンライン状態管理）</h3>
-      <ul class="id-list" id="idListContainer"></ul>
-      <button class="btn-reset-pass" onclick="resetAllUserPasswords()">🚨 全ユーザーのパスワード・IDを一括初期化</button>
-      <button class="btn-close" onclick="closeAdminIdList()">閉じる</button>
-    </div>
-  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, collection, query, orderBy, limit,
+      onSnapshot, runTransaction, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  <script>
-    const ADMIN_PASS = "213358";
-    let isRegisterMode = false;
-    let loggedInUser = null;
-
-    window.onload = function() {
-      const savedUser = sessionStorage.getItem('tsuruLoggedInUser');
-      if (savedUser) {
-        loggedInUser = savedUser;
-        setOnlineStatus(loggedInUser, true);
-        showApp();
-      }
+    // Firebaseコンソール → プロジェクトの設定 → マイアプリ に表示される値へ置き換える
+    const firebaseConfig = {
+      apiKey: "AIzaSyAJR50mm-_0KpqCoGXs7ZLK1IvomdmQmko",
+      authDomain: "tsurusaki-point.firebaseapp.com",
+      projectId: "tsurusaki-point",
+      storageBucket: "tsurusaki-point.firebasestorage.app",
+      messagingSenderId: "945501362718",
+      appId: "1:945501362718:web:e76b743b87e5b21112ec0f"
     };
 
-    function setOnlineStatus(id, isOnline) {
-      if (!id) return;
-      let activeUsers = JSON.parse(localStorage.getItem('tsuruActiveUsers')) || {};
-      if (isOnline) {
-        activeUsers[id] = Date.now();
-      } else {
-        delete activeUsers[id];
-      }
-      localStorage.setItem('tsuruActiveUsers', JSON.stringify(activeUsers));
+    // ご家庭に合わせて名前・必要鶴数を自由に変更できます
+    const REWARDS = [
+      { name: "🍨 アイス", cost: 50 },
+      { name: "🎮 ゲーム30分追加", cost: 100 },
+      { name: "🍣 好きな夕飯を選ぶ", cost: 150 },
+      { name: "🎁 500円のおもちゃ", cost: 300 }
+    ];
+
+    const $ = (id) => document.getElementById(id);
+    const configured = !firebaseConfig.apiKey.startsWith("ここを");
+    let auth, db, currentUser, currentProfile;
+    let members = [];
+    let selectedTargetId = null;
+    let stopMembers = null, stopBalance = null, stopHistory = null;
+    let toastTimer;
+
+    function showToast(message) {
+      clearTimeout(toastTimer);
+      $("toast").textContent = message;
+      $("toast").classList.add("show");
+      toastTimer = setTimeout(() => $("toast").classList.remove("show"), 2600);
     }
 
-    function toggleAuthMode() {
-      isRegisterMode = !isRegisterMode;
-      const title = document.getElementById('authTitle');
-      const btn = document.getElementById('authBtn');
-      const toggleText = document.getElementById('toggleAuthText');
-
-      if (isRegisterMode) {
-        title.textContent = "新規アカウント登録";
-        btn.textContent = "登録する";
-        btn.classList.add('btn-secondary');
-        toggleText.textContent = "すでに登録済みの方（ログインへ）";
-      } else {
-        title.textContent = "ログイン";
-        btn.textContent = "ログイン";
-        btn.classList.remove('btn-secondary');
-        toggleText.textContent = "新規アカウント作成はこちら";
-      }
+    function friendlyError(error) {
+      const code = error?.code || "";
+      if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) return "メールアドレスかパスワードが違います";
+      if (code.includes("too-many-requests")) return "何度も失敗しました。少し待ってからお試しください";
+      if (code.includes("network-request-failed")) return "通信できません。インターネット接続を確認してください";
+      if (code.includes("permission-denied")) return "操作する権限がありません。Firebase設定を確認してください";
+      return error?.message || "エラーが起きました";
     }
 
-    function handleAuth() {
-      const id = document.getElementById('loginId').value.trim();
-      const pass = document.getElementById('loginPass').value.trim();
+    function formatDate(timestamp) {
+      if (!timestamp?.toDate) return "たった今";
+      return timestamp.toDate().toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    }
 
-      if (!id || !pass) {
-        alert('IDとパスワードの両方を入力してください');
+    function clearListeners() {
+      [stopMembers, stopBalance, stopHistory].forEach((stop) => stop && stop());
+      stopMembers = stopBalance = stopHistory = null;
+    }
+
+    function showLogin() {
+      clearListeners();
+      currentUser = currentProfile = null;
+      members = [];
+      $("appView").classList.add("hidden");
+      $("loginView").classList.remove("hidden");
+    }
+
+    async function startApp(user) {
+      currentUser = user;
+      const profileSnap = await getDoc(doc(db, "users", user.uid));
+      if (!profileSnap.exists() || profileSnap.data().active === false) {
+        await signOut(auth);
+        throw new Error("このアカウントは家族メンバーとして登録されていません");
+      }
+      currentProfile = { uid: user.uid, ...profileSnap.data() };
+      $("currentName").textContent = currentProfile.displayName;
+      $("balanceName").textContent = currentProfile.displayName;
+      $("adminPanel").classList.toggle("hidden", currentProfile.role !== "admin");
+      $("loginView").classList.add("hidden");
+      $("appView").classList.remove("hidden");
+      listenMembers();
+      listenBalance();
+      listenHistory();
+      renderRewards();
+    }
+
+    function listenMembers() {
+      stopMembers = onSnapshot(collection(db, "users"), (snapshot) => {
+        members = snapshot.docs
+          .map((item) => ({ uid: item.id, ...item.data() }))
+          .filter((item) => item.active !== false)
+          .sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+        renderMembers();
+        renderAdminTargets();
+      }, (error) => showToast(friendlyError(error)));
+    }
+
+    function renderMembers() {
+      const list = members.filter((member) => member.uid !== currentUser.uid);
+      if (!list.some((member) => member.uid === selectedTargetId)) selectedTargetId = null;
+      $("memberGrid").innerHTML = list.length ? list.map((member) => `
+        <button class="member ${member.uid === selectedTargetId ? "selected" : ""}" data-uid="${member.uid}">
+          <span class="emoji">${member.avatar || "👤"}</span>${escapeHtml(member.displayName)}
+        </button>`).join("") : '<div class="empty" style="grid-column:1/-1">ほかの家族がまだ登録されていません</div>';
+      document.querySelectorAll(".member").forEach((button) => button.addEventListener("click", () => {
+        selectedTargetId = button.dataset.uid;
+        renderMembers();
+      }));
+    }
+
+    function renderAdminTargets() {
+      $("adminTarget").innerHTML = members.map((member) => `<option value="${member.uid}">${escapeHtml(member.displayName)}</option>`).join("");
+    }
+
+    function listenBalance() {
+      stopBalance = onSnapshot(doc(db, "balances", currentUser.uid), (snapshot) => {
+        $("balance").textContent = snapshot.exists() ? Number(snapshot.data().amount || 0).toLocaleString("ja-JP") : "0";
+      }, (error) => showToast(friendlyError(error)));
+    }
+
+    function listenHistory() {
+      const historyQuery = query(collection(db, "transactions"), orderBy("createdAt", "desc"), limit(50));
+      stopHistory = onSnapshot(historyQuery, (snapshot) => {
+        const rows = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+        renderHistory(rows);
+      }, (error) => showToast(friendlyError(error)));
+    }
+
+    function renderHistory(rows) {
+      if (!rows.length) {
+        $("historyList").innerHTML = '<div class="empty">履歴はまだありません</div>';
         return;
       }
-
-      let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-
-      if (isRegisterMode) {
-        if (userPasswords[id]) {
-          alert('このIDは既に登録されています。ログインするか別のIDをお使いください。');
-          return;
-        }
-        userPasswords[id] = pass;
-        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
-        alert('アカウント登録が完了しました！ログインします。');
-        loggedInUser = id;
-        sessionStorage.setItem('tsuruLoggedInUser', id);
-        setOnlineStatus(id, true);
-        showApp();
-      } else {
-        if (!userPasswords[id]) {
-          alert('登録されていないIDです。まずは新規アカウント作成を行ってください。');
-          return;
-        }
-        if (userPasswords[id] !== pass) {
-          alert('パスワードが正しくありません');
-          return;
-        }
-        loggedInUser = id;
-        sessionStorage.setItem('tsuruLoggedInUser', id);
-        setOnlineStatus(id, true);
-        showApp();
-      }
-
-      document.getElementById('loginId').value = '';
-      document.getElementById('loginPass').value = '';
+      $("historyList").innerHTML = rows.map((row) => {
+        const isReward = row.kind === "reward";
+        const isOut = row.senderId === currentUser.uid;
+        const sign = isReward || isOut ? "−" : "+";
+        const title = isReward ? row.detail : `${escapeHtml(row.senderName || "ママ管理者")} → ${escapeHtml(row.recipientName || "-")}`;
+        return `<div class="history-item ${isReward ? "rewarded" : isOut ? "out" : ""}">
+          <div class="history-main"><span>${title}</span><span>${sign}${Number(row.amount || 0)}鶴</span></div>
+          <div class="history-sub">${formatDate(row.createdAt)}${row.detail && !isReward ? " ・ " + escapeHtml(row.detail) : ""}</div>
+        </div>`;
+      }).join("");
     }
 
-    function showApp() {
-      document.getElementById('authCard').style.display = 'none';
-      document.getElementById('appCard').style.display = 'block';
-      document.getElementById('currentUserId').textContent = loggedInUser;
-      document.getElementById('targetUserName').textContent = loggedInUser;
-      toggleTargetInput();
-      loadData();
+    function renderRewards() {
+      $("rewardGrid").innerHTML = REWARDS.map((reward, index) => `<div class="card reward">
+        <div><div class="reward-name">${reward.name}</div><div class="reward-cost">${reward.cost}鶴</div></div>
+        <button class="btn blue" data-reward="${index}">交換</button>
+      </div>`).join("");
+      document.querySelectorAll("[data-reward]").forEach((button) => button.addEventListener("click", () => redeemReward(Number(button.dataset.reward))));
     }
 
-    function logout() {
-      if (loggedInUser) {
-        setOnlineStatus(loggedInUser, false);
-      }
-      sessionStorage.removeItem('tsuruLoggedInUser');
-      loggedInUser = null;
-      document.getElementById('appCard').style.display = 'none';
-      document.getElementById('authCard').style.display = 'block';
-    }
-
-    function toggleTargetInput() {
-      const type = document.getElementById('type').value;
-      const targetGroup = document.getElementById('targetIdGroup');
-      if (type === "あげる") {
-        targetGroup.style.display = 'block';
-      } else {
-        targetGroup.style.display = 'none';
+    async function transferTsuru() {
+      const amount = Number.parseInt($("amount").value, 10);
+      const detail = $("detail").value.trim();
+      const recipient = members.find((member) => member.uid === selectedTargetId);
+      if (!recipient) return showToast("あげる相手を選んでください");
+      if (!Number.isInteger(amount) || amount <= 0) return showToast("正しい鶴数を入力してください");
+      $("sendBtn").disabled = true;
+      try {
+        await runTransaction(db, async (tx) => {
+          const senderRef = doc(db, "balances", currentUser.uid);
+          const recipientRef = doc(db, "balances", recipient.uid);
+          const [senderSnap, recipientSnap] = await Promise.all([tx.get(senderRef), tx.get(recipientRef)]);
+          const senderAmount = senderSnap.exists() ? Number(senderSnap.data().amount || 0) : 0;
+          const recipientAmount = recipientSnap.exists() ? Number(recipientSnap.data().amount || 0) : 0;
+          if (senderAmount < amount) throw new Error(`鶴が足りません（現在 ${senderAmount}鶴）`);
+          tx.set(senderRef, { amount: senderAmount - amount, updatedAt: serverTimestamp() }, { merge: true });
+          tx.set(recipientRef, { amount: recipientAmount + amount, updatedAt: serverTimestamp() }, { merge: true });
+          tx.set(doc(collection(db, "transactions")), {
+            kind: "transfer", actorId: currentUser.uid,
+            senderId: currentUser.uid, senderName: currentProfile.displayName,
+            recipientId: recipient.uid, recipientName: recipient.displayName,
+            amount, detail, createdAt: serverTimestamp()
+          });
+        });
+        $("amount").value = "";
+        $("detail").value = "";
+        selectedTargetId = null;
+        renderMembers();
+        showToast(`${recipient.displayName}さんへ ${amount}鶴 送りました！`);
+      } catch (error) {
+        showToast(friendlyError(error));
+      } finally {
+        $("sendBtn").disabled = false;
       }
     }
 
-    function getUserBalance(name) {
-      if (!name) return 0;
-      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
-      let count = 0;
-      records.forEach(r => {
-        if (r.name === name) {
-          const amt = parseInt(r.amount, 10) || 0;
-          if (r.type === "もらう" || r.type.includes("受鶴")) {
-            count += amt;
-          } else {
-            count -= amt;
-          }
+    async function redeemReward(index) {
+      const reward = REWARDS[index];
+      if (!reward || !confirm(`${reward.name}を ${reward.cost}鶴で交換しますか？`)) return;
+      try {
+        await runTransaction(db, async (tx) => {
+          const balanceRef = doc(db, "balances", currentUser.uid);
+          const balanceSnap = await tx.get(balanceRef);
+          const current = balanceSnap.exists() ? Number(balanceSnap.data().amount || 0) : 0;
+          if (current < reward.cost) throw new Error(`鶴が足りません（あと ${reward.cost - current}鶴）`);
+          tx.set(balanceRef, { amount: current - reward.cost, updatedAt: serverTimestamp() }, { merge: true });
+          tx.set(doc(collection(db, "transactions")), {
+            kind: "reward", actorId: currentUser.uid,
+            senderId: currentUser.uid, senderName: currentProfile.displayName,
+            recipientId: null, recipientName: null,
+            amount: reward.cost, detail: reward.name, createdAt: serverTimestamp()
+          });
+        });
+        showToast(`${reward.name}に交換しました！`);
+      } catch (error) { showToast(friendlyError(error)); }
+    }
+
+    async function grantTsuru() {
+      if (currentProfile.role !== "admin") return;
+      const uid = $("adminTarget").value;
+      const amount = Number.parseInt($("adminAmount").value, 10);
+      const recipient = members.find((member) => member.uid === uid);
+      if (!recipient || !Number.isInteger(amount) || amount <= 0) return showToast("家族と正しい鶴数を指定してください");
+      $("grantBtn").disabled = true;
+      try {
+        await runTransaction(db, async (tx) => {
+          const balanceRef = doc(db, "balances", uid);
+          const snap = await tx.get(balanceRef);
+          const current = snap.exists() ? Number(snap.data().amount || 0) : 0;
+          tx.set(balanceRef, { amount: current + amount, updatedAt: serverTimestamp() }, { merge: true });
+          tx.set(doc(collection(db, "transactions")), {
+            kind: "grant", actorId: currentUser.uid,
+            senderId: null, senderName: "ママ管理者",
+            recipientId: uid, recipientName: recipient.displayName,
+            amount, detail: "ママより付与", createdAt: serverTimestamp()
+          });
+        });
+        $("adminAmount").value = "";
+        showToast(`${recipient.displayName}さんへ ${amount}鶴 付与しました！`);
+      } catch (error) { showToast(friendlyError(error)); }
+      finally { $("grantBtn").disabled = false; }
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" }[char]));
+    }
+
+    document.querySelectorAll(".tab").forEach((button) => button.addEventListener("click", () => {
+      document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+      ["send", "rewards", "history"].forEach((name) => $(name + "Panel").classList.toggle("hidden", name !== button.dataset.tab));
+    }));
+    document.querySelectorAll("[data-amount]").forEach((button) => button.addEventListener("click", () => $("amount").value = button.dataset.amount));
+    $("sendBtn").addEventListener("click", transferTsuru);
+    $("grantBtn").addEventListener("click", grantTsuru);
+
+    if (!configured) {
+      $("setupView").classList.remove("hidden");
+      $("loginBtn").disabled = true;
+      $("loginStatus").textContent = "先にFirebase設定を入力してください";
+    } else {
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      $("loginBtn").addEventListener("click", async () => {
+        const email = $("email").value.trim();
+        const password = $("password").value;
+        if (!email || !password) return showToast("メールアドレスとパスワードを入力してください");
+        $("loginBtn").disabled = true;
+        $("loginStatus").textContent = "ログイン中…";
+        $("loginStatus").classList.remove("error");
+        try { await signInWithEmailAndPassword(auth, email, password); }
+        catch (error) {
+          $("loginStatus").textContent = friendlyError(error);
+          $("loginStatus").classList.add("error");
+        } finally { $("loginBtn").disabled = false; }
+      });
+      $("password").addEventListener("keydown", (event) => { if (event.key === "Enter") $("loginBtn").click(); });
+      $("logoutBtn").addEventListener("click", () => signOut(auth));
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) return showLogin();
+        try { await startApp(user); }
+        catch (error) {
+          $("loginStatus").textContent = friendlyError(error);
+          $("loginStatus").classList.add("error");
         }
       });
-      return count;
-    }
-
-    function addRecord() {
-      const type = document.getElementById('type').value;
-      const targetId = document.getElementById('targetId').value.trim();
-      const rawAmount = document.getElementById('amount').value;
-      const amount = parseInt(rawAmount, 10);
-      const detail = document.getElementById('detail').value;
-
-      if (isNaN(amount) || amount <= 0) {
-        alert('数量を正しく数字で入力してください');
-        return;
-      }
-
-      const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-
-      if (type === "あげる") {
-        if (!targetId) {
-          alert("あげる相手のIDを入力してください");
-          return;
-        }
-
-        if (targetId === loggedInUser) {
-          alert("自分自身にあげることはできません");
-          return;
-        }
-
-        if (!userPasswords[targetId]) {
-          alert(`「${targetId}」は登録されていないIDです。登録されているユーザーのIDを指定してください。`);
-          return;
-        }
-
-        const currentBalance = getUserBalance(loggedInUser);
-        if (currentBalance <= 0) {
-          alert("あなたは鶴を持ってないペニュ🐧");
-          return;
-        }
-        if (currentBalance < amount) {
-          alert(`所有している鶴数（${currentBalance}鶴）を超えてあげることはできません`);
-          return;
-        }
-
-        // あげるときにパスワード認証を追加
-        const confirmPass = prompt(`【あげる確認】\n「${loggedInUser}」のパスワードを入力してください:`);
-        if (confirmPass === null) return; // キャンセルされた場合
-        if (confirmPass !== userPasswords[loggedInUser]) {
-          alert("パスワードが正しくありません。送信を中止しました。");
-          return;
-        }
-      }
-
-      const date = new Date().toLocaleDateString('ja-JP');
-      const detailText = targetId ? `相手:${targetId} ${detail}` : detail;
-      
-      let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
-
-      const sendRecord = { id: Date.now(), date, type, name: loggedInUser, amount, detail: detailText };
-      records.unshift(sendRecord);
-
-      if (type === "あげる" && targetId) {
-        const receiveRecord = {
-          id: Date.now() + 1,
-          date,
-          type: "もらう",
-          name: targetId,
-          amount,
-          detail: `差出人:${loggedInUser} ${detail}`
-        };
-        records.unshift(receiveRecord);
-      }
-
-      localStorage.setItem('tsuruRecords', JSON.stringify(records));
-
-      document.getElementById('amount').value = '';
-      document.getElementById('detail').value = '';
-      document.getElementById('targetId').value = '';
-
-      alert('送信完了しました！');
-      loadData();
-    }
-
-    function deleteRecord(id) {
-      const pass = prompt('削除するには管理者パスワードを入力してください:');
-      if (pass !== ADMIN_PASS) {
-        alert('パスワードが正しくありません');
-        return;
-      }
-
-      let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
-      records = records.filter(r => r.id !== id);
-      localStorage.setItem('tsuruRecords', JSON.stringify(records));
-      loadData();
-    }
-
-    function loadData() {
-      const list = document.getElementById('historyList');
-      list.innerHTML = '';
-      const records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
-
-      const myRecords = records.filter(r => r.name === loggedInUser);
-
-      if (myRecords.length === 0) {
-        list.innerHTML = '<li style="border: 2px dashed #999999; background:#ffffff; color:#666666;">履歴はありません</li>';
-      } else {
-        myRecords.forEach(r => {
-          const amt = parseInt(r.amount, 10) || 0;
-          const li = document.createElement('li');
-          li.innerHTML = `
-            <div>
-              <strong>${r.date} 【${r.type}】 ${amt} 鶴</strong><br>
-              ${r.detail ? '(' + r.detail + ')' : ''}
-            </div>
-            <button class="delete-btn" onclick="deleteRecord(${r.id})">削除</button>
-          `;
-          list.appendChild(li);
-        });
-      }
-
-      if (loggedInUser) {
-        const userBal = getUserBalance(loggedInUser);
-        document.getElementById('userTsuru').textContent = userBal;
-      }
-    }
-
-    /* 管理者機能 */
-    function openAdminIdList() {
-      const pass = prompt('管理者パスワードを入力してください:');
-      if (pass !== ADMIN_PASS) {
-        alert('パスワードが違います');
-        return;
-      }
-
-      renderAdminModalList();
-      document.getElementById('idModal').style.display = 'flex';
-    }
-
-    function renderAdminModalList() {
-      const userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-      const activeUsers = JSON.parse(localStorage.getItem('tsuruActiveUsers')) || {};
-
-      const container = document.getElementById('idListContainer');
-      container.innerHTML = '';
-
-      const keys = Object.keys(userPasswords);
-      if (keys.length === 0) {
-        container.innerHTML = '<li style="border-left:none; font-weight:normal; color:#666;">登録されたIDはありません</li>';
-      } else {
-        keys.forEach(idName => {
-          const count = getUserBalance(idName);
-          const isOnline = !!activeUsers[idName];
-          const statusHtml = isOnline 
-            ? '<span class="status-badge status-online">🟢 ログイン中</span>' 
-            : '<span class="status-badge status-offline">⚪ オフライン</span>';
-
-          const li = document.createElement('li');
-          
-          li.innerHTML = `
-            <div class="id-info-row">
-              <div>
-                <span>${idName}</span>
-                ${statusHtml}
-              </div>
-              <span style="color:#0284c7;">${count} 鶴</span>
-            </div>
-            <div class="id-action-row">
-              <button class="btn-admin-action btn-grant" onclick="adminGrantTsuru('${idName}')">🎁 鶴付与</button>
-              <button class="btn-admin-action btn-reset-single-pass" onclick="adminResetSinglePassword('${idName}')">🔑 パス初期化</button>
-              <button class="btn-admin-action btn-delete-id" onclick="adminDeleteId('${idName}')">🗑️ ID削除</button>
-            </div>
-          `;
-          container.appendChild(li);
-        });
-      }
-    }
-
-    function adminGrantTsuru(idName) {
-      const input = prompt(`【${idName}】に付与する鶴の数を入力してください:`, "10");
-      if (input === null) return;
-
-      const amount = parseInt(input, 10);
-      if (isNaN(amount) || amount <= 0) {
-        alert('正しい正の数値を入力してください');
-        return;
-      }
-
-      const date = new Date().toLocaleDateString('ja-JP');
-      const record = {
-        id: Date.now(),
-        date,
-        type: "もらう",
-        name: idName,
-        amount: amount,
-        detail: "管理者より特別付与"
-      };
-
-      let records = JSON.parse(localStorage.getItem('tsuruRecords')) || [];
-      records.unshift(record);
-      localStorage.setItem('tsuruRecords', JSON.stringify(records));
-
-      alert(`【${idName}】に ${amount} 鶴を付与しました！`);
-      loadData();
-      renderAdminModalList();
-    }
-
-    function adminResetSinglePassword(idName) {
-      if (confirm(`【${idName}】のパスワードを初期化しますか？\n（初期化後のパスワードは「0000」になります）`)) {
-        let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-        userPasswords[idName] = "0000";
-        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
-        alert(`【${idName}】のパスワードを「0000」にリセットしました。`);
-      }
-    }
-
-    function adminDeleteId(idName) {
-      if (confirm(`本当にID【${idName}】を完全に削除しますか？\n（ログインできなくなります）`)) {
-        let userPasswords = JSON.parse(localStorage.getItem('tsuruUserPasswords')) || {};
-        delete userPasswords[idName];
-        localStorage.setItem('tsuruUserPasswords', JSON.stringify(userPasswords));
-
-        setOnlineStatus(idName, false);
-
-        alert(`ID【${idName}】を削除しました。`);
-        renderAdminModalList();
-        
-        if (loggedInUser === idName) {
-          logout();
-          closeAdminIdList();
-        }
-      }
-    }
-
-    function resetAllUserPasswords() {
-      if (confirm('登録されているすべての「ID・パスワード」を初期化（削除）しますか？')) {
-        localStorage.removeItem('tsuruUserPasswords');
-        localStorage.removeItem('tsuruActiveUsers');
-        alert('全アカウントを初期化しました。');
-        renderAdminModalList();
-        logout();
-        closeAdminIdList();
-      }
-    }
-
-    function closeAdminIdList() {
-      document.getElementById('idModal').style.display = 'none';
     }
   </script>
-
 </body>
 </html>
