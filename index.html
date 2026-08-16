@@ -88,7 +88,10 @@
     .topbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
     .who { min-width: 0; font-size: 13px; font-weight: 800; }
     .who strong { display: block; overflow: hidden; text-overflow: ellipsis; }
+    .top-actions { display: flex; justify-content: flex-end; gap: 7px; flex-wrap: wrap; }
     .logout { width: auto; min-height: 36px; padding: 7px 10px; font-size: 12px; }
+    .password-panel { margin-bottom: 14px; }
+    .password-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .balance {
       margin-bottom: 14px;
       padding: 17px;
@@ -126,8 +129,6 @@
     }
     .member .emoji { display: block; margin-bottom: 2px; font-size: 27px; }
     .member.selected { border-color: var(--pink); background: #fff1f5; color: var(--pink-dark); box-shadow: 0 0 0 2px rgba(255,71,126,.14); }
-    .quick-amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: -4px 0 14px; }
-    .quick-amounts button { min-height: 38px; border: 1px solid #93c5fd; border-radius: 9px; background: #eff6ff; color: #075985; font-weight: 900; cursor: pointer; }
     .card { padding: 14px; border: 2px solid var(--line); border-radius: 14px; background: #f8fafc; margin-bottom: 12px; }
     .reward-grid { display: grid; gap: 10px; }
     .reward { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
@@ -194,8 +195,30 @@
       <section id="appView" class="hidden">
         <div class="topbar">
           <div class="who">ログイン中<strong id="currentName">---</strong></div>
-          <button id="logoutBtn" class="btn gray logout">ログアウト</button>
+          <div class="top-actions">
+            <button id="passwordBtn" class="btn blue logout">パスワード変更</button>
+            <button id="logoutBtn" class="btn gray logout">ログアウト</button>
+          </div>
         </div>
+        <section id="passwordPanel" class="card password-panel hidden">
+          <h2 class="section-title">🔑 ログインパスワード変更</h2>
+          <div class="field">
+            <label for="currentPassword">現在のパスワード</label>
+            <input id="currentPassword" type="password" autocomplete="current-password" placeholder="現在のパスワードを入力">
+          </div>
+          <div class="field">
+            <label for="newPassword">新しいパスワード</label>
+            <input id="newPassword" type="password" autocomplete="new-password" placeholder="6文字以上で入力">
+          </div>
+          <div class="field">
+            <label for="confirmPassword">新しいパスワード（確認）</label>
+            <input id="confirmPassword" type="password" autocomplete="new-password" placeholder="もう一度入力">
+          </div>
+          <div class="password-actions">
+            <button id="cancelPasswordBtn" class="btn gray">やめる</button>
+            <button id="changePasswordBtn" class="btn blue">変更する</button>
+          </div>
+        </section>
         <div class="balance">
           <div class="name"><span id="balanceName">---</span> さんの所有鶴数</div>
           <div class="number"><span id="balance">0</span> 鶴</div>
@@ -212,9 +235,6 @@
           <div class="field">
             <label for="amount">何鶴あげる？</label>
             <input id="amount" type="number" min="1" inputmode="numeric" placeholder="例：10">
-          </div>
-          <div class="quick-amounts">
-            <button data-amount="5">5鶴</button><button data-amount="10">10鶴</button><button data-amount="20">20鶴</button><button data-amount="50">50鶴</button>
           </div>
           <div class="field">
             <label for="detail">理由・メッセージ</label>
@@ -251,7 +271,10 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+      EmailAuthProvider, reauthenticateWithCredential, updatePassword
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
     import {
       getFirestore, doc, getDoc, collection, query, orderBy, limit,
       onSnapshot, runTransaction, serverTimestamp
@@ -267,12 +290,12 @@
       appId: "1:945501362718:web:e76b743b87e5b21112ec0f"
     };
 
-    // ご家庭に合わせて名前・必要鶴数を自由に変更できます
+    // ごほうび内容と必要鶴数
     const REWARDS = [
-      { name: "🍨 アイス", cost: 50 },
-      { name: "🎮 ゲーム30分追加", cost: 100 },
-      { name: "🍣 好きな夕飯を選ぶ", cost: 150 },
-      { name: "🎁 500円のおもちゃ", cost: 300 }
+      { name: "🍚 ご飯", cost: 1 },
+      { name: "🍰 デザート", cost: 1 },
+      { name: "🍪 おやつ", cost: 1 },
+      { name: "💴 お小遣い500円", cost: 500 }
     ];
 
     const $ = (id) => document.getElementById(id);
@@ -299,6 +322,46 @@
       return error?.message || "エラーが起きました";
     }
 
+    function passwordChangeError(error) {
+      const code = error?.code || "";
+      if (code.includes("invalid-credential") || code.includes("wrong-password")) return "現在のパスワードが違います";
+      if (code.includes("weak-password")) return "新しいパスワードは6文字以上で入力してください";
+      if (code.includes("requires-recent-login")) return "本人確認のため、いったんログアウトして再ログインしてから変更してください";
+      return friendlyError(error);
+    }
+
+    function clearPasswordForm() {
+      ["currentPassword", "newPassword", "confirmPassword"].forEach((id) => $(id).value = "");
+    }
+
+    function togglePasswordPanel(show) {
+      $("passwordPanel").classList.toggle("hidden", !show);
+      if (!show) clearPasswordForm();
+    }
+
+    async function changeLoginPassword() {
+      const currentPassword = $("currentPassword").value;
+      const newPassword = $("newPassword").value;
+      const confirmPassword = $("confirmPassword").value;
+      if (!currentPassword || !newPassword || !confirmPassword) return showToast("3つのパスワード欄をすべて入力してください");
+      if (newPassword.length < 6) return showToast("新しいパスワードは6文字以上で入力してください");
+      if (newPassword !== confirmPassword) return showToast("新しいパスワードが一致しません");
+      if (!currentUser?.email) return showToast("このアカウントではパスワードを変更できません");
+
+      $("changePasswordBtn").disabled = true;
+      try {
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+        await reauthenticateWithCredential(currentUser, credential);
+        await updatePassword(currentUser, newPassword);
+        togglePasswordPanel(false);
+        showToast("ログインパスワードを変更しました");
+      } catch (error) {
+        showToast(passwordChangeError(error));
+      } finally {
+        $("changePasswordBtn").disabled = false;
+      }
+    }
+
     function formatDate(timestamp) {
       if (!timestamp?.toDate) return "たった今";
       return timestamp.toDate().toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -313,6 +376,7 @@
       clearListeners();
       currentUser = currentProfile = null;
       members = [];
+      togglePasswordPanel(false);
       $("appView").classList.add("hidden");
       $("loginView").classList.remove("hidden");
     }
@@ -494,7 +558,6 @@
       document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
       ["send", "rewards", "history"].forEach((name) => $(name + "Panel").classList.toggle("hidden", name !== button.dataset.tab));
     }));
-    document.querySelectorAll("[data-amount]").forEach((button) => button.addEventListener("click", () => $("amount").value = button.dataset.amount));
     $("sendBtn").addEventListener("click", transferTsuru);
     $("grantBtn").addEventListener("click", grantTsuru);
 
@@ -520,6 +583,10 @@
         } finally { $("loginBtn").disabled = false; }
       });
       $("password").addEventListener("keydown", (event) => { if (event.key === "Enter") $("loginBtn").click(); });
+      $("passwordBtn").addEventListener("click", () => togglePasswordPanel($("passwordPanel").classList.contains("hidden")));
+      $("cancelPasswordBtn").addEventListener("click", () => togglePasswordPanel(false));
+      $("changePasswordBtn").addEventListener("click", changeLoginPassword);
+      $("confirmPassword").addEventListener("keydown", (event) => { if (event.key === "Enter") changeLoginPassword(); });
       $("logoutBtn").addEventListener("click", () => signOut(auth));
       onAuthStateChanged(auth, async (user) => {
         if (!user) return showLogin();
