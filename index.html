@@ -7,6 +7,10 @@
   <title>鶴Pay</title>
   <link rel="apple-touch-icon" href="./icon.png">
   <link rel="icon" href="./icon.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="鶴Pay">
   <style>
     :root {
       --pink: #ff477e;
@@ -44,6 +48,20 @@
     h1 { margin: 0; font-size: 28px; letter-spacing: .04em; }
     h1 span { color: var(--pink); }
     .tagline { margin: 4px 0 0; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .install-app {
+      width: auto;
+      min-height: 36px;
+      margin-top: 10px;
+      padding: 7px 12px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .install-app:hover { filter: brightness(.96); }
     main { padding: 0 18px 22px; }
     .hidden { display: none !important; }
     .notice {
@@ -173,6 +191,7 @@
     <header>
       <h1>🕊️ 鶴<span>Pay</span></h1>
       <p class="tagline">家族の「ありがとう」と「がんばった」を貯めよう</p>
+    <button id="installAppBtn" class="install-app hidden" type="button">📱 ホーム画面に追加</button>
     </header>
     <main>
       <section id="setupView" class="hidden">
@@ -268,6 +287,57 @@
     </main>
   </div>
   <div id="toast" class="toast"></div>
+
+  <script>
+    (() => {
+      const installButton = document.getElementById("installAppBtn");
+      let deferredInstallPrompt = null;
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true;
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+      const showInstallButton = () => {
+        if (!isStandalone) installButton?.classList.remove("hidden");
+      };
+
+      if (!isStandalone) showInstallButton();
+
+      window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        showInstallButton();
+      });
+
+      installButton?.addEventListener("click", async () => {
+        if (deferredInstallPrompt) {
+          deferredInstallPrompt.prompt();
+          const choice = await deferredInstallPrompt.userChoice;
+          deferredInstallPrompt = null;
+          if (choice.outcome === "accepted") installButton.classList.add("hidden");
+          return;
+        }
+
+        if (isIOS) {
+          alert("Safari下部の共有ボタン（□に↑）を押し、「ホーム画面に追加」を選んでください。");
+        } else {
+          alert("ブラウザのメニューから「アプリをインストール」または「ホーム画面に追加」を選んでください。");
+        }
+      });
+
+      window.addEventListener("appinstalled", () => {
+        installButton?.classList.add("hidden");
+      });
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./service-worker.js")
+            .catch((error) => console.warn("Service worker registration failed:", error));
+        });
+      }
+    })();
+  </script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
