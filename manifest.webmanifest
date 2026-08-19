@@ -1,0 +1,19 @@
+{
+  "name": "鶴Pay",
+  "short_name": "鶴Pay",
+  "description": "家族の「ありがとう」と「がんばった」を貯めるアプリ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ff477e",
+  "icons": [
+    {
+      "src": "./icon.png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}
